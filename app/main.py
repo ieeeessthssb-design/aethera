@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import Base, engine
 import app.models  # noqa: F401  (register tables)
-from app.routers import assistant, auth, devices, expert, farms, sensors
+from app.routers import assistant, auth, devices, expert, farms, sensors, weather
 
 
 @asynccontextmanager
@@ -28,7 +28,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for r in (auth.router, farms.router, sensors.router, devices.router, assistant.router, expert.router):
+for r in (auth.router, farms.router, sensors.router, weather.router, devices.router, assistant.router, expert.router):
     app.include_router(r)
 
 

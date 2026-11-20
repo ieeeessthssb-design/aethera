@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     assistant_provider: str = "stub"  # stub | openai | groq
     openai_api_key: str = ""
     groq_api_key: str = ""
+    llm_model: str = ""          # empty = provider default (see irrigation_llm.DEFAULTS)
+    llm_timeout_s: float = 25.0
+    weather_enabled: bool = True  # Open-Meteo lookup for irrigation advice
 
     # STT
     stt_provider: str = "stub"  # stub | whisper

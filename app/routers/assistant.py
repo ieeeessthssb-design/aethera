@@ -10,6 +10,7 @@ from app.models.advice_log import AdviceLog
 from app.schemas.assistant import (
     ChatRequest,
     ChatResponse,
+    IrrigationRequest,
     VoiceResponse,
     AdviceLogResponse,
     AdviceLogListResponse,
@@ -99,7 +100,29 @@ async def voice_chat(
         confidence=result.confidence,
         escalated=result.escalated,
         case_id=result.case_id,
+        confidence_level=result.confidence_level,
+        source_label=result.source_label,
     )
+
+
+@router.post("/assistant/irrigation", response_model=ChatResponse)
+async def irrigation_advice(
+    request: IrrigationRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Irrigation advice from farm profile + latest sensors + weather."""
+    farm = await _get_farm_or_404(request.farm_id, db)
+    if farm.owner_id != current_user.id and current_user.role != "expert":
+        raise HTTPException(status_code=403, detail="Not your farm")
+    assistant = get_assistant_service()
+    result = await assistant.irrigation_advice(farm=farm, user=current_user, db=db, language=request.language)
+    db.add(AdviceLog(
+        user_id=current_user.id, farm_id=farm.id, question="[irrigation advice]",
+        answer=result.answer, confidence=result.confidence, escalated=result.escalated, channel="text",
+    ))
+    await db.commit()
+    return result
 
 
 @router.get("/advice/log", response_model=AdviceLogListResponse, tags=["advice"])

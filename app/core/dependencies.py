@@ -49,6 +49,18 @@ async def get_current_user(
     return user
 
 
+async def get_accessible_farm(farm_id: str, db: AsyncSession, user: User):
+    """Load a farm; only its owner or an expert may access it (404 if missing, 403 otherwise)."""
+    from app.models.farm import Farm
+
+    farm = (await db.execute(select(Farm).where(Farm.id == farm_id))).scalar_one_or_none()
+    if farm is None:
+        raise HTTPException(status_code=404, detail="Farm not found")
+    if farm.owner_id != user.id and user.role != "expert":
+        raise HTTPException(status_code=403, detail="Not your farm")
+    return farm
+
+
 async def require_expert(
     current_user: User = Depends(get_current_user),
 ) -> User:

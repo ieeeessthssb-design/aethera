@@ -15,6 +15,15 @@ class ChatResponse(BaseModel):
     sources: List[str]
     escalated: bool
     case_id: Optional[str] = None
+    # LLM providers only (null with the rule-based stub)
+    confidence_level: Optional[str] = None
+    source_label: Optional[str] = None
+    irrigation: Optional[dict] = None
+
+
+class IrrigationRequest(BaseModel):
+    farm_id: str
+    language: Optional[str] = None  # ar | fr | en (default ar)
 
 
 class VoiceResponse(BaseModel):
@@ -23,6 +32,8 @@ class VoiceResponse(BaseModel):
     confidence: float
     escalated: bool
     case_id: Optional[str] = None
+    confidence_level: Optional[str] = None
+    source_label: Optional[str] = None
 
 
 class AdviceLogResponse(BaseModel):

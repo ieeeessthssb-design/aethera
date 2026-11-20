@@ -256,17 +256,20 @@ components:
         soil_moisture:
           type: number
           format: float
-          description: "Soil volumetric water content in % (0-100)"
+          nullable: true
+          description: "Soil volumetric water content in % (0-100). null = no reading yet (never 0)"
           example: 42.5
         temperature:
           type: number
           format: float
-          description: "Air temperature in °C"
+          nullable: true
+          description: "Air temperature in °C. null = no reading yet"
           example: 28.3
         humidity:
           type: number
           format: float
-          description: "Relative humidity in % (0-100)"
+          nullable: true
+          description: "Relative humidity in % (0-100). null = no reading yet"
           example: 65.0
         timestamp:
           type: string
@@ -301,6 +304,40 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/SensorReadingResponse'
+
+    WeatherDay:
+      type: object
+      required: [rain_mm]
+      properties:
+        date: {type: string, format: date, nullable: true, example: "2024-02-01"}
+        temp_max_c: {type: number, nullable: true, example: 36.0}
+        temp_min_c: {type: number, nullable: true, example: 21.0}
+        et0_mm: {type: number, nullable: true, description: "Reference evapotranspiration (mm/day)", example: 6.2}
+        rain_mm: {type: number, example: 0.0}
+        rain_prob_pct: {type: number, nullable: true, example: 5}
+
+    WeatherResponse:
+      type: object
+      required: [farm_id, latitude, longitude, location_source, source, fetched_at, rain_next_2d_mm, daily]
+      properties:
+        farm_id: {type: string, format: uuid}
+        latitude: {type: number, example: 34.74}
+        longitude: {type: number, example: 10.76}
+        location_source:
+          type: string
+          enum: [farm, region]
+          description: "region = governorate centroid (approximate)"
+        source: {type: string, example: "Open-Meteo"}
+        fetched_at: {type: string, format: date-time}
+        temp_now_c: {type: number, nullable: true}
+        wind_kmh: {type: number, nullable: true}
+        rain_next_2d_mm: {type: number, description: "Tomorrow + day after", example: 2.5}
+        rain_prob_next_2d_pct: {type: number, nullable: true}
+        daily:
+          type: array
+          description: "Yesterday, today, tomorrow, day after (UTC days)"
+          items:
+            $ref: '#/components/schemas/WeatherDay'
 
     # ── Device ───────────────────────────────────────────────────
     DeviceResponse:
@@ -416,6 +453,28 @@ components:
           nullable: true
           description: "Set when escalated=true; tracks the expert review case"
           example: null
+        confidence_level:
+          type: string
+          enum: [high, medium, low]
+          nullable: true
+          description: "LLM providers only (null with the rule-based stub)"
+        source_label:
+          type: string
+          enum: [sensor, simulated_sensor, weather_forecast, farm_profile, knowledge_base, general_agronomy]
+          nullable: true
+          description: "Primary basis of the advice. simulated_sensor = demo data, general_agronomy = not locally verified"
+        irrigation:
+          type: object
+          nullable: true
+          description: "Structured irrigation advice: action, when, amount_mm, reasons[{point, source}], confidence_reason, needs_expert, data_gaps[]"
+          additionalProperties: true
+
+    IrrigationRequest:
+      type: object
+      required: [farm_id]
+      properties:
+        farm_id: {type: string, format: uuid}
+        language: {type: string, enum: [ar, fr, en], nullable: true, description: "Default ar"}
 
     VoiceResponse:
       type: object
@@ -806,6 +865,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
+        '403':
+          description: Farm belongs to another user (experts may read any farm)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
         '404':
           description: No sensor readings found
           content:
@@ -855,7 +920,16 @@ paths:
           schema:
             type: integer
             default: 200
+            minimum: 1
             maximum: 1000
+        - name: order
+          in: query
+          required: false
+          description: "Sort by time. Use asc for charts."
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
       responses:
         '200':
           description: Array of sensor readings
@@ -887,6 +961,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
+        '403':
+          description: Farm belongs to another user (experts may read any farm)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
         '404':
           description: Farm not found
           content:
@@ -894,11 +974,80 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
         '422':
-          description: Validation error
+          description: Validation error (bad metric, or from > to)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+
+  # ── Weather ──────────────────────────────────────────────────
+  /farms/{id}/weather:
+    get:
+      tags: [weather]
+      summary: Current weather and short forecast for the farm's location (Open-Meteo)
+      description: >
+        Uses the farm's lat/lng; if missing, falls back to the governorate centroid from `region`
+        (location_source = "region", approximate).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Weather for the farm location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherResponse'
+              examples:
+                sfax:
+                  value:
+                    farm_id: "660e8400-e29b-41d4-a716-446655440001"
+                    latitude: 34.74
+                    longitude: 10.76
+                    location_source: "farm"
+                    source: "Open-Meteo"
+                    fetched_at: "2024-02-01T14:30:00Z"
+                    temp_now_c: 30.1
+                    wind_kmh: 11.2
+                    rain_next_2d_mm: 2.5
+                    rain_prob_next_2d_pct: 30
+                    daily:
+                      - {date: "2024-01-31", temp_max_c: 33.0, temp_min_c: 20.1, et0_mm: 5.6, rain_mm: 0.0, rain_prob_pct: 0}
+                      - {date: "2024-02-01", temp_max_c: 36.0, temp_min_c: 21.0, et0_mm: 6.2, rain_mm: 0.0, rain_prob_pct: 5}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '403':
+          description: Farm belongs to another user (experts may read any farm)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Farm has no location (no lat/lng and region not a known governorate)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '503':
+          description: Weather provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
 
   # ── Devices ──────────────────────────────────────────────────
   /devices:
@@ -1089,6 +1238,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+
+  /assistant/irrigation:
+    post:
+      tags: [assistant]
+      summary: Irrigation advice from farm profile + latest sensors + weather
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IrrigationRequest'
+      responses:
+        '200':
+          description: Advice with confidence level and source label (ChatResponse; escalated=true creates an expert case)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '403':
+          description: Farm belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
 
   /assistant/voice:
     post:

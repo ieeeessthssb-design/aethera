@@ -7,9 +7,10 @@ SourceEnum = Literal["real", "simulated"]
 
 
 class SensorLatestResponse(BaseModel):
-    soil_moisture: float
-    temperature: float
-    humidity: float
+    # null = that metric has no reading yet (never a fake 0)
+    soil_moisture: Optional[float] = None
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
     timestamp: datetime
     source: SourceEnum
 

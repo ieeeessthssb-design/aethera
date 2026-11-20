@@ -92,6 +92,10 @@ class AssistantResult:
     sources: List[str]
     escalated: bool
     case_id: Optional[str] = None
+    # Set by LLM-backed providers (None for the rule-based stub)
+    confidence_level: Optional[str] = None   # high | medium | low
+    source_label: Optional[str] = None       # sensor | simulated_sensor | weather_forecast | ...
+    irrigation: Optional[dict] = None        # structured irrigation advice
 
 
 class AssistantInterface(ABC):
@@ -106,6 +110,10 @@ class AssistantInterface(ABC):
         db,
     ) -> AssistantResult:
         ...
+
+    async def irrigation_advice(self, farm, user, db, message=None, language=None) -> AssistantResult:
+        """Irrigation advice for a farm. Default: reuse the text answer (rule-based)."""
+        return await self.answer(message=message or "امتى خير وقت نسقي؟", farm=farm, user=user, db=db)
 
 
 class StubAssistantService(AssistantInterface):
@@ -209,8 +217,7 @@ class StubAssistantService(AssistantInterface):
 def get_assistant_service() -> AssistantInterface:
     """Factory function: returns the appropriate assistant implementation."""
     provider = settings.assistant_provider.lower()
-    if provider == "stub":
-        return StubAssistantService()
-    # Future: elif provider == "openai": return OpenAIAssistantService()
-    # Future: elif provider == "groq": return GroqAssistantService()
-    return StubAssistantService()  # Fallback
+    if provider in ("openai", "groq"):
+        from app.services.llm_assistant_service import LLMAssistantService  # lazy: avoids import cycle
+        return LLMAssistantService()  # falls back to the stub if no API key is set
+    return StubAssistantService()
