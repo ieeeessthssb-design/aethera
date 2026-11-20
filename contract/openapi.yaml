@@ -1,0 +1,1385 @@
+openapi: 3.1.0
+info:
+  title: Aethera API
+  description: |
+    AI agricultural platform for Tunisian smallholder farmers.
+    Single source of truth for all client-server contracts.
+  version: 1.0.0
+  contact:
+    name: Aethera Team
+    email: dev@aethera.tn
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: http://localhost:4010
+    description: Prism mock server
+  - url: https://aethera-backend.onrender.com
+    description: Production (Render)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Authentication endpoints
+  - name: farms
+    description: Farm management
+  - name: sensors
+    description: IoT sensor readings
+  - name: devices
+    description: ESP32 device management
+  - name: assistant
+    description: AI assistant (text and voice)
+  - name: advice
+    description: Advice log
+  - name: expert
+    description: Expert review dashboard
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    deviceKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Device-Key
+
+  schemas:
+    # ── Error ────────────────────────────────────────────────────
+    ErrorDetail:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          example: "Resource not found"
+
+    ValidationError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+              msg:
+                type: string
+              type:
+                type: string
+
+    # ── Auth ─────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: "Ahmed Ben Salah"
+        email:
+          type: string
+          format: email
+          example: "ahmed@example.com"
+        password:
+          type: string
+          minLength: 6
+          example: "securepass123"
+        role:
+          type: string
+          enum: [farmer, expert]
+          example: "farmer"
+        phone:
+          type: string
+          example: "+21698765432"
+        region:
+          type: string
+          example: "Sfax"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "demo@aethera.tn"
+        password:
+          type: string
+          example: "123456"
+
+    UserResponse:
+      type: object
+      required: [id, name, email, role, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Ahmed Ben Salah"
+        email:
+          type: string
+          example: "demo@aethera.tn"
+        role:
+          type: string
+          enum: [farmer, expert]
+          example: "farmer"
+        phone:
+          type: string
+          nullable: true
+          example: "+21698765432"
+        region:
+          type: string
+          nullable: true
+          example: "Sfax"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T08:30:00Z"
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    # ── Farm ─────────────────────────────────────────────────────
+    FarmResponse:
+      type: object
+      required: [id, owner_id, name, crop, region, irrigation_type, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        owner_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "مزرعة بن صالح"
+        crop:
+          type: string
+          example: "tomatoes"
+        region:
+          type: string
+          example: "Sfax"
+        lat:
+          type: number
+          format: float
+          nullable: true
+          example: 34.7398
+        lng:
+          type: number
+          format: float
+          nullable: true
+          example: 10.7600
+        plant_age_days:
+          type: integer
+          nullable: true
+          example: 45
+        irrigation_type:
+          type: string
+          enum: [drip, sprinkler, flood, rainfed]
+          example: "drip"
+        area_hectares:
+          type: number
+          format: float
+          nullable: true
+          example: 2.5
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T08:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-02-01T12:00:00Z"
+
+    FarmUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "مزرعة بن صالح"
+        crop:
+          type: string
+          example: "tomatoes"
+        region:
+          type: string
+          example: "Sfax"
+        lat:
+          type: number
+          format: float
+          example: 34.7398
+        lng:
+          type: number
+          format: float
+          example: 10.7600
+        plant_age_days:
+          type: integer
+          example: 45
+        irrigation_type:
+          type: string
+          enum: [drip, sprinkler, flood, rainfed]
+          example: "drip"
+        area_hectares:
+          type: number
+          format: float
+          example: 2.5
+
+    # ── Sensor ───────────────────────────────────────────────────
+    SensorSource:
+      type: string
+      enum: [real, simulated]
+      description: "real = physical ESP32 device; simulated = generated by backend"
+
+    SensorLatestResponse:
+      type: object
+      required: [soil_moisture, temperature, humidity, timestamp, source]
+      properties:
+        soil_moisture:
+          type: number
+          format: float
+          description: "Soil volumetric water content in % (0-100)"
+          example: 42.5
+        temperature:
+          type: number
+          format: float
+          description: "Air temperature in °C"
+          example: 28.3
+        humidity:
+          type: number
+          format: float
+          description: "Relative humidity in % (0-100)"
+          example: 65.0
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-02-01T14:30:00Z"
+        source:
+          $ref: '#/components/schemas/SensorSource'
+
+    SensorReadingResponse:
+      type: object
+      required: [timestamp, value, metric, source]
+      properties:
+        id:
+          type: integer
+          example: 12345
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-02-01T14:30:00Z"
+        metric:
+          type: string
+          enum: [soil_moisture, temperature, humidity]
+          example: "soil_moisture"
+        value:
+          type: number
+          format: float
+          example: 42.5
+        source:
+          $ref: '#/components/schemas/SensorSource'
+
+    SensorReadingsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/SensorReadingResponse'
+
+    # ── Device ───────────────────────────────────────────────────
+    DeviceResponse:
+      type: object
+      required: [id, farm_id, name, device_key, is_active, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "770e8400-e29b-41d4-a716-446655440002"
+        farm_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "ESP32-001"
+        device_key:
+          type: string
+          description: "API key for device ingestion. Only returned once at creation."
+          example: "dev_k_7fgh23jklm"
+        is_active:
+          type: boolean
+          example: true
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-02-01T14:28:00Z"
+        created_at:
+          type: string
+          format: date-time
+
+    DeviceCreateRequest:
+      type: object
+      required: [farm_id, name]
+      properties:
+        farm_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "ESP32-001"
+
+    DeviceReadingIngestionRequest:
+      type: object
+      required: [soil_moisture, temperature, humidity, recorded_at]
+      properties:
+        soil_moisture:
+          type: number
+          format: float
+          example: 42.5
+        temperature:
+          type: number
+          format: float
+          example: 28.3
+        humidity:
+          type: number
+          format: float
+          example: 65.0
+        recorded_at:
+          type: string
+          format: date-time
+          example: "2024-02-01T14:30:00Z"
+
+    DeviceReadingIngestionResponse:
+      type: object
+      required: [inserted, recorded_at]
+      properties:
+        inserted:
+          type: integer
+          description: "Number of readings inserted (3 for the 3 metrics)"
+          example: 3
+        recorded_at:
+          type: string
+          format: date-time
+
+    # ── Assistant ────────────────────────────────────────────────
+    ChatRequest:
+      type: object
+      required: [message, farm_id]
+      properties:
+        message:
+          type: string
+          example: "أوراق الطماطم عندي صفراء، واش يقدر يكون السبب؟"
+        farm_id:
+          type: string
+          format: uuid
+
+    ChatResponse:
+      type: object
+      required: [answer, confidence, sources, escalated]
+      properties:
+        answer:
+          type: string
+          example: "الاصفرار يمكن أن يكون بسبب نقص الحديد أو المغنيسيوم. أنصح بفحص التربة وإجراء تحليل للعناصر الغذائية."
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.72
+        sources:
+          type: array
+          items:
+            type: string
+          example: ["INAT Tunisia agronomy guide 2023", "FAO crop management handbook"]
+        escalated:
+          type: boolean
+          example: false
+        case_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Set when escalated=true; tracks the expert review case"
+          example: null
+
+    VoiceResponse:
+      type: object
+      required: [transcript, answer, confidence, escalated]
+      properties:
+        transcript:
+          type: string
+          example: "أوراق الطماطم عندي صفراء"
+        answer:
+          type: string
+          example: "الاصفرار يمكن أن يكون بسبب نقص الحديد..."
+        confidence:
+          type: number
+          format: float
+          example: 0.68
+        escalated:
+          type: boolean
+          example: false
+        case_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    # ── Advice Log ───────────────────────────────────────────────
+    AdviceLogEntry:
+      type: object
+      required: [id, user_id, farm_id, question, answer, confidence, escalated, channel, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        farm_id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        answer:
+          type: string
+        confidence:
+          type: number
+          format: float
+        escalated:
+          type: boolean
+        channel:
+          type: string
+          enum: [text, voice]
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Expert Cases ─────────────────────────────────────────────
+    ExpertCaseStatus:
+      type: string
+      enum: [pending, confirmed, rejected]
+
+    ExpertCaseListItem:
+      type: object
+      required: [id, farm_id, farmer_name, crop, region, ai_diagnosis, ai_confidence, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        farm_id:
+          type: string
+          format: uuid
+        farmer_name:
+          type: string
+          example: "Ahmed Ben Salah"
+        crop:
+          type: string
+          example: "tomatoes"
+        region:
+          type: string
+          example: "Sfax"
+        ai_diagnosis:
+          type: string
+          example: "Possible iron deficiency causing chlorosis"
+        ai_confidence:
+          type: number
+          format: float
+          example: 0.48
+        symptoms:
+          type: string
+          nullable: true
+          example: "أوراق صفراء، نمو بطيء"
+        photo_url:
+          type: string
+          nullable: true
+          example: "https://storage.aethera.tn/cases/uuid.jpg"
+        status:
+          $ref: '#/components/schemas/ExpertCaseStatus'
+        created_at:
+          type: string
+          format: date-time
+
+    ExpertCaseDetail:
+      allOf:
+        - $ref: '#/components/schemas/ExpertCaseListItem'
+        - type: object
+          properties:
+            original_question:
+              type: string
+            ai_sources:
+              type: array
+              items:
+                type: string
+            review:
+              $ref: '#/components/schemas/ExpertReview'
+              nullable: true
+
+    ExpertReview:
+      type: object
+      required: [decision, reviewed_at, expert_name]
+      properties:
+        decision:
+          type: string
+          enum: [confirm, reject]
+        comment:
+          type: string
+          nullable: true
+          example: "Confirmed iron chlorosis. Recommend chelated iron foliar spray."
+        corrected_diagnosis:
+          type: string
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+        expert_name:
+          type: string
+
+    ExpertReviewRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [confirm, reject]
+        comment:
+          type: string
+          example: "Confirmed iron chlorosis. Recommend chelated iron foliar spray."
+        corrected_diagnosis:
+          type: string
+          nullable: true
+          example: "Iron deficiency chlorosis (Chlorosis ferrique)"
+
+paths:
+  # ── Auth ─────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              farmer:
+                summary: Register a farmer
+                value:
+                  name: "Ahmed Ben Salah"
+                  email: "ahmed@example.com"
+                  password: "securepass123"
+                  role: "farmer"
+                  phone: "+21698765432"
+                  region: "Sfax"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                success:
+                  value:
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJyb2xlIjoiZmFybWVyIn0.signature"
+                    user:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      name: "Ahmed Ben Salah"
+                      email: "ahmed@example.com"
+                      role: "farmer"
+                      phone: "+21698765432"
+                      region: "Sfax"
+                      created_at: "2024-01-15T08:30:00Z"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+              examples:
+                conflict:
+                  value:
+                    detail: "Email already registered"
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login and obtain JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              demo_farmer:
+                summary: Demo farmer login
+                value:
+                  email: "demo@aethera.tn"
+                  password: "123456"
+              demo_expert:
+                summary: Demo expert login
+                value:
+                  email: "expert@aethera.tn"
+                  password: "123456"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                success:
+                  value:
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJyb2xlIjoiZmFybWVyIn0.signature"
+                    user:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      name: "Ahmed (Demo)"
+                      email: "demo@aethera.tn"
+                      role: "farmer"
+                      phone: "+21698765432"
+                      region: "Sfax"
+                      created_at: "2024-01-01T00:00:00Z"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+              examples:
+                invalid:
+                  value:
+                    detail: "Invalid email or password"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  # ── Farms ────────────────────────────────────────────────────
+  /farms/me:
+    get:
+      tags: [farms]
+      summary: Get current farmer's farm profile
+      responses:
+        '200':
+          description: Farm profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FarmResponse'
+              examples:
+                farm:
+                  value:
+                    id: "660e8400-e29b-41d4-a716-446655440001"
+                    owner_id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "مزرعة بن صالح"
+                    crop: "tomatoes"
+                    region: "Sfax"
+                    lat: 34.7398
+                    lng: 10.7600
+                    plant_age_days: 45
+                    irrigation_type: "drip"
+                    area_hectares: 2.5
+                    created_at: "2024-01-15T08:30:00Z"
+                    updated_at: "2024-02-01T12:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: No farm profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+              examples:
+                not_found:
+                  value:
+                    detail: "No farm profile found for this user"
+
+    put:
+      tags: [farms]
+      summary: Create or update current farmer's farm profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FarmUpdateRequest'
+            examples:
+              update:
+                value:
+                  name: "مزرعة بن صالح"
+                  crop: "tomatoes"
+                  region: "Sfax"
+                  lat: 34.7398
+                  lng: 10.7600
+                  plant_age_days: 45
+                  irrigation_type: "drip"
+                  area_hectares: 2.5
+      responses:
+        '200':
+          description: Farm profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FarmResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /farms/{id}/sensors/latest:
+    get:
+      tags: [sensors]
+      summary: Get the latest aggregated sensor reading for a farm
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Latest sensor reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorLatestResponse'
+              examples:
+                real:
+                  summary: Real sensor data
+                  value:
+                    soil_moisture: 42.5
+                    temperature: 28.3
+                    humidity: 65.0
+                    timestamp: "2024-02-01T14:30:00Z"
+                    source: "real"
+                simulated:
+                  summary: Simulated data (no real device)
+                  value:
+                    soil_moisture: 38.1
+                    temperature: 29.7
+                    humidity: 58.4
+                    timestamp: "2024-02-01T14:30:00Z"
+                    source: "simulated"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: No sensor readings found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+              examples:
+                no_sensor:
+                  value:
+                    detail: "No sensor readings found for this farm"
+
+  /farms/{id}/sensors/readings:
+    get:
+      tags: [sensors]
+      summary: Get time-series sensor readings for a farm
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [soil_moisture, temperature, humidity]
+          example: soil_moisture
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-25T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: "2024-02-01T23:59:59Z"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 200
+            maximum: 1000
+      responses:
+        '200':
+          description: Array of sensor readings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorReadingsResponse'
+              examples:
+                readings:
+                  value:
+                    - id: 1
+                      timestamp: "2024-02-01T14:30:00Z"
+                      metric: "soil_moisture"
+                      value: 42.5
+                      source: "real"
+                    - id: 2
+                      timestamp: "2024-02-01T13:30:00Z"
+                      metric: "soil_moisture"
+                      value: 41.0
+                      source: "real"
+                    - id: 3
+                      timestamp: "2024-02-01T12:30:00Z"
+                      metric: "soil_moisture"
+                      value: 39.8
+                      source: "simulated"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  # ── Devices ──────────────────────────────────────────────────
+  /devices:
+    get:
+      tags: [devices]
+      summary: List devices for the authenticated farmer
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeviceResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+
+    post:
+      tags: [devices]
+      summary: Register a new IoT device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCreateRequest'
+            examples:
+              create:
+                value:
+                  farm_id: "660e8400-e29b-41d4-a716-446655440001"
+                  name: "ESP32-001"
+      responses:
+        '201':
+          description: Device registered (device_key shown only once)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+              examples:
+                created:
+                  value:
+                    id: "770e8400-e29b-41d4-a716-446655440002"
+                    farm_id: "660e8400-e29b-41d4-a716-446655440001"
+                    name: "ESP32-001"
+                    device_key: "dev_k_7fgh23jklm"
+                    is_active: true
+                    last_seen_at: null
+                    created_at: "2024-02-01T08:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /devices/{device_id}/readings:
+    post:
+      tags: [devices]
+      summary: Ingest sensor readings from an ESP32 device
+      description: |
+        Called by the ESP32 device itself. Authentication via X-Device-Key header.
+        No JWT required. Inserts one reading per metric (soil_moisture, temperature, humidity).
+      security:
+        - deviceKeyAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceReadingIngestionRequest'
+            examples:
+              reading:
+                value:
+                  soil_moisture: 42.5
+                  temperature: 28.3
+                  humidity: 65.0
+                  recorded_at: "2024-02-01T14:30:00Z"
+      responses:
+        '201':
+          description: Readings ingested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceReadingIngestionResponse'
+              examples:
+                success:
+                  value:
+                    inserted: 3
+                    recorded_at: "2024-02-01T14:30:00Z"
+        '401':
+          description: Invalid or missing device key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  # ── Assistant ────────────────────────────────────────────────
+  /assistant/chat:
+    post:
+      tags: [assistant]
+      summary: Send a text message to the AI assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              arabic:
+                summary: Arabic question about tomatoes
+                value:
+                  message: "أوراق الطماطم عندي صفراء، واش يقدر يكون السبب؟"
+                  farm_id: "660e8400-e29b-41d4-a716-446655440001"
+              irrigation:
+                summary: Irrigation question
+                value:
+                  message: "امتى خير وقت نسقي؟"
+                  farm_id: "660e8400-e29b-41d4-a716-446655440001"
+      responses:
+        '200':
+          description: AI assistant response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                high_confidence:
+                  summary: High confidence, not escalated
+                  value:
+                    answer: "أنصح بالسقي مساءً بعد الغروب لتجنب التبخر. مع نظام التقطير، ساعة واحدة كافية."
+                    confidence: 0.85
+                    sources: ["INAT Tunisia agronomy guide 2023"]
+                    escalated: false
+                    case_id: null
+                escalated:
+                  summary: Low confidence, escalated to expert
+                  value:
+                    answer: "الاصفرار يمكن أن يكون بسبب نقص الحديد أو المغنيسيوم. تم إرسال حالتك لمراجعة خبير زراعي."
+                    confidence: 0.45
+                    sources: []
+                    escalated: true
+                    case_id: "880e8400-e29b-41d4-a716-446655440003"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /assistant/voice:
+    post:
+      tags: [assistant]
+      summary: Send a voice message to the AI assistant
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio, farm_id]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: "Audio file (m4a, wav, webm)"
+                farm_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transcript and AI response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceResponse'
+              examples:
+                success:
+                  value:
+                    transcript: "أوراق الطماطم عندي صفراء"
+                    answer: "الاصفرار يمكن أن يكون بسبب نقص الحديد. أنصح بفحص التربة."
+                    confidence: 0.68
+                    escalated: false
+                    case_id: null
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '422':
+          description: Validation error or unsupported audio format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  # ── Advice Log ───────────────────────────────────────────────
+  /advice/log:
+    get:
+      tags: [advice]
+      summary: Get advice history for the current user
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of advice log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdviceLogEntry'
+                  total:
+                    type: integer
+              examples:
+                log:
+                  value:
+                    items:
+                      - id: "990e8400-e29b-41d4-a716-446655440004"
+                        user_id: "550e8400-e29b-41d4-a716-446655440000"
+                        farm_id: "660e8400-e29b-41d4-a716-446655440001"
+                        question: "أوراق الطماطم صفراء"
+                        answer: "نقص حديد محتمل..."
+                        confidence: 0.68
+                        escalated: false
+                        channel: "text"
+                        created_at: "2024-02-01T14:30:00Z"
+                    total: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+
+  # ── Expert ───────────────────────────────────────────────────
+  /expert/cases:
+    get:
+      tags: [expert]
+      summary: List expert cases (expert role required)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, confirmed, rejected]
+          example: pending
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExpertCaseListItem'
+                  total:
+                    type: integer
+              examples:
+                pending:
+                  value:
+                    items:
+                      - id: "880e8400-e29b-41d4-a716-446655440003"
+                        farm_id: "660e8400-e29b-41d4-a716-446655440001"
+                        farmer_name: "Ahmed Ben Salah"
+                        crop: "tomatoes"
+                        region: "Sfax"
+                        ai_diagnosis: "Possible iron deficiency causing chlorosis"
+                        ai_confidence: 0.45
+                        symptoms: "أوراق صفراء، نمو بطيء"
+                        photo_url: null
+                        status: "pending"
+                        created_at: "2024-02-01T14:35:00Z"
+                    total: 1
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '403':
+          description: Forbidden — expert role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+              examples:
+                forbidden:
+                  value:
+                    detail: "Expert role required"
+
+  /expert/cases/{id}:
+    get:
+      tags: [expert]
+      summary: Get a single expert case with full detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Case detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpertCaseDetail'
+              examples:
+                detail:
+                  value:
+                    id: "880e8400-e29b-41d4-a716-446655440003"
+                    farm_id: "660e8400-e29b-41d4-a716-446655440001"
+                    farmer_name: "Ahmed Ben Salah"
+                    crop: "tomatoes"
+                    region: "Sfax"
+                    ai_diagnosis: "Possible iron deficiency causing chlorosis"
+                    ai_confidence: 0.45
+                    symptoms: "أوراق صفراء، نمو بطيء"
+                    photo_url: null
+                    status: "pending"
+                    created_at: "2024-02-01T14:35:00Z"
+                    original_question: "أوراق الطماطم عندي صفراء"
+                    ai_sources: ["INAT Tunisia agronomy guide 2023"]
+                    review: null
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Case not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+
+  /expert/cases/{id}/review:
+    post:
+      tags: [expert]
+      summary: Submit a review decision for an expert case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpertReviewRequest'
+            examples:
+              confirm:
+                summary: Confirm the AI diagnosis
+                value:
+                  decision: "confirm"
+                  comment: "Confirmed iron chlorosis. Recommend chelated iron foliar spray 3g/L weekly for 3 weeks."
+              reject:
+                summary: Reject with corrected diagnosis
+                value:
+                  decision: "reject"
+                  comment: "Not iron deficiency — this is mosaic virus."
+                  corrected_diagnosis: "Tomato mosaic virus (ToMV)"
+      responses:
+        '200':
+          description: Review submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpertCaseDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '404':
+          description: Case not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+        '409':
+          description: Case already reviewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+              examples:
+                already_reviewed:
+                  value:
+                    detail: "This case has already been reviewed"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
