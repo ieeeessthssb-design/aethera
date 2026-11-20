@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aethera utilise le micro pour dicter votre question.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Aethera transforme votre voix en texte pour votre question.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Aethera uses the camera to photograph crop symptoms.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

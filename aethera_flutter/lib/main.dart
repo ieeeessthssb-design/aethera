@@ -13,6 +13,7 @@ import 'screens/consult.dart';
 import 'screens/dashboard.dart';
 import 'screens/diagnose.dart';
 import 'screens/expert.dart';
+import 'screens/expert_cases.dart';
 import 'screens/farm.dart';
 import 'screens/guide.dart';
 import 'screens/irrigation.dart';
@@ -82,9 +83,8 @@ Widget _screenFor(String path) {
     case '/profile':
       return const ProfileScreen();
     case '/expert':
-      return const ExpertDashboardScreen();
     case '/expert/review':
-      return const ExpertReviewScreen();
+      return const ExpertCasesPage();
     case '/expert/risks':
       return const ExpertRisksScreen();
     case '/admin':
@@ -92,13 +92,16 @@ Widget _screenFor(String path) {
   }
   final parts = p.split('/').where((s) => s.isNotEmpty).toList();
   if (parts.length == 2 &&
-      parts[0] == 'expert' &&
-      kExpertSections.contains(parts[1]))
-    return ExpertSectionScreen(section: parts[1]);
-  if (parts.length == 2 &&
-      parts[0] == 'admin' &&
-      kAdminTitles.containsKey(parts[1]))
-    return AdminSectionScreen(section: parts[1]);
+    parts[0] == 'expert' &&
+    kExpertSections.contains(parts[1])) {
+  return ExpertSectionScreen(section: parts[1]);
+}
+
+if (parts.length == 2 &&
+    parts[0] == 'admin' &&
+    kAdminTitles.containsKey(parts[1])) {
+  return AdminSectionScreen(section: parts[1]);
+}
   return const NotFoundScreen();
 }
 

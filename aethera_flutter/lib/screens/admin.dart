@@ -259,9 +259,9 @@ class AdminSectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = '/admin/$section';
-    if (section == 'knowledge')
+    if (section == 'knowledge'){
       return AppShell(
-          role: Role.admin, path: path, child: const KnowledgeHub());
+          role: Role.admin, path: path, child: const KnowledgeHub());}
     Widget bodyW;
     switch (section) {
       case 'validation':

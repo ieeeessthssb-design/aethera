@@ -39,10 +39,10 @@ class _RadarScreenState extends State<RadarScreen> {
           .from('alert_responses')
           .select('alert_id, sees_it')
           .eq('user_id', uid);
-      if (mounted)
+      if (mounted){
         setState(() => _mine = {
               for (final x in r) x['alert_id'].toString(): x['sees_it'] == true
-            });
+            });}
     } catch (_) {}
     try {
       final r = await c
@@ -50,8 +50,8 @@ class _RadarScreenState extends State<RadarScreen> {
           .select('id, crop, governorate, observed_on, alert_id')
           .eq('user_id', uid)
           .order('created_at', ascending: false);
-      if (mounted)
-        setState(() => _myReports = r.map(RiskReportRow.fromMap).toList());
+      if (mounted){
+        setState(() => _myReports = r.map(RiskReportRow.fromMap).toList());}
     } catch (_) {}
     try {
       final p = await c

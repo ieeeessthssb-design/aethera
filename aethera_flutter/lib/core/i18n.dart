@@ -155,6 +155,40 @@ const Map<String, List<String>> _d = {
   'describeProblem': ['صِف مشكلتك...', 'Décrivez votre problème...'],
   'uploadPhoto': ['حمّل تصويرة', 'Importer une photo'],
   'voiceQuestion': ['سؤال بالصوت', 'Question vocale'],
+  'voiceSend': ['ابعث', 'Envoyer'],
+  'voiceStop': ['كمّلت، وقّف', 'Terminer'],
+  'voiceRepeat': ['عاود احكي', 'Répéter'],
+  'voiceListening': ['نسمع فيك…', 'Je vous écoute…'],
+  'voiceReview': [
+    'هذا اللي فهمناه. كان مش صحيح، اضغط «عاود احكي».',
+    'Voici ce que nous avons compris. Si ce n\'est pas correct, appuyez sur « Répéter ».'
+  ],
+  'voiceErrUnavailable': [
+    'التعرّف على الصوت مش متوفّر في هذا المتصفّح. جرّب Chrome ولا Edge، ولا اكتب سؤالك.',
+    'La reconnaissance vocale n\'est pas disponible ici. Essayez Chrome ou Edge, ou écrivez votre question.'
+  ],
+  'voiceErrMic': [
+    'الميكروفون ممنوع. فعّلو من إعدادات المتصفّح وعاود.',
+    'Micro refusé. Autorisez-le dans les paramètres du navigateur, puis réessayez.'
+  ],
+  'voiceErrHeard': [
+    'ما سمعناش مليح. عاود احكي.',
+    'Je n\'ai rien compris. Parlez à nouveau.'
+  ],
+  'voiceErrNetwork': [
+    'مشكل في الإنترنت. عاود بعد شوية، ولا اكتب سؤالك.',
+    'Problème de réseau. Réessayez, ou écrivez votre question.'
+  ],
+  'voiceErrGeneric': [
+    'صار مشكل. عاود ولا اكتب سؤالك.',
+    'Un problème est survenu. Réessayez ou écrivez votre question.'
+  ],
+  'listen': ['اسمع', 'Écouter'],
+  'listenStop': ['وقّف القراءة', 'Arrêter la lecture'],
+  'photoNeeded': [
+    'زيد تصويرة باش تنجّم تحلّل.',
+    'Ajoutez une photo pour lancer l\'analyse.'
+  ],
   'useFarmContext': [
     'استعمل معلومات ضيعتي',
     'Utiliser le contexte de ma ferme'
@@ -321,7 +355,7 @@ class L extends InheritedNotifier<LangController> {
       (context.getInheritedWidgetOfExactType<L>()!).notifier!;
 }
 
-/// The "عربي | FR" pill switch.
+/// The "تونسي | FR" pill switch.
 class LangSwitch extends StatelessWidget {
   const LangSwitch({super.key});
   @override
@@ -362,7 +396,7 @@ class LangSwitch extends StatelessWidget {
           borderRadius: BorderRadius.circular(12)),
       child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [seg(Lang.ar, 'عربي'), seg(Lang.fr, 'FR')]),
+          children: [seg(Lang.ar, 'تونسي'), seg(Lang.fr, 'FR')]),
     );
   }
 }

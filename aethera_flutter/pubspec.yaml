@@ -12,8 +12,11 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   supabase_flutter: ^2.8.0
+  http: ^1.2.0
   shared_preferences: ^2.3.0
   image_picker: ^1.1.2
+  speech_to_text: ^7.4.0
+  flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:

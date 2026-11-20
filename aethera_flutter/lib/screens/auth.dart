@@ -42,8 +42,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _onAuth() {
     // e.g. Google sign-in finished in the browser and the app was reopened via deep link.
-    if (mounted && context.auth.user != null)
-      Navigator.of(context).pushReplacementNamed('/radar');
+    if (mounted && context.auth.user != null){
+      Navigator.of(context).pushReplacementNamed('/radar');}
   }
 
   Future<void> _submit() async {
@@ -69,8 +69,8 @@ class _AuthScreenState extends State<AuthScreen> {
             email: email,
             password: _pw.text,
             emailRedirectTo: AppConfig.oauthRedirect);
-        if (mounted)
-          showToast(context, l.t('checkEmail'), kind: ToastKind.success);
+        if (mounted){
+          showToast(context, l.t('checkEmail'), kind: ToastKind.success);}
       }
     } on AuthException catch (e) {
       if (mounted) showToast(context, e.message, kind: ToastKind.error);

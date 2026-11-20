@@ -11,6 +11,7 @@ import '../widgets/ab.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/photo_picker.dart';
 import '../widgets/toast.dart';
+import '../widgets/voice_input.dart';
 
 const _pipe = [
   'Understanding question',
@@ -33,17 +34,49 @@ class _AssistScreenState extends State<AssistScreen> {
   String _phase = 'idle';
   int _step = 0;
   final List<Timer> _timers = [];
+  late final VoiceController _voice = VoiceController(_q);
+
+  @override
+  void initState() {
+    super.initState();
+    _q.addListener(_onText);
+    _voice.addListener(_onText);
+  }
+
+  void _onText() {
+    if (mounted) setState(() {});
+  }
+
+  bool? _lastAr;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ar = context.l.isAr;
+    if (_lastAr != null && _lastAr != ar) {
+      // language switched: erase the question written/spoken in the old language
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _voice.languageChanged();
+      });
+    }
+    _lastAr = ar;
+  }
 
   @override
   void dispose() {
     for (final t in _timers) {
       t.cancel();
     }
+    _q.removeListener(_onText);
+    _voice.removeListener(_onText);
+    _voice.dispose();
     _q.dispose();
     super.dispose();
   }
 
   void _ask() {
+    _voice.stopSpeaking();
+    _voice.reset();
     setState(() {
       _phase = 'thinking';
       _step = 0;
@@ -57,11 +90,50 @@ class _AssistScreenState extends State<AssistScreen> {
   }
 
   void _send() {
+    // The farmer's own words (_q) are sent untouched, in the language he used.
+    // Everything else is written in French for the expert page.
+    final photo = _photo;
+    final trail = <String>[
+      'Aide rapide : question posée',
+      if (photo != null) 'Photo jointe : ${photo.name}',
+      if (_ctx) 'Contexte de la ferme inclus',
+      'Réponse IA obtenue : confiance moyenne (68 %)',
+      'Envoyé à l\'expert',
+    ];
     context.demo.set(
         caseStatus: CaseStatus.submitted,
         expertVerdict: '',
         expertPlan: [],
-        published: false);
+        published: false,
+        expertDecision: '',
+        submission: FarmerSubmission(
+          origin: 'assist',
+          note: _q.text.trim(),
+          spoken: _voice.spoken,
+          lang: context.l.isAr ? 'ar' : 'fr',
+          crop: 'Tomate',
+          aiPrediction: 'Alternariose (possible)',
+          aiConfidence: .68,
+          aiAnalysis: [
+            'Stress hydrique : humidité du sol à 22 %, sous l\'objectif, et forte chaleur.',
+            'Carence en nutriments : azote ou magnésium pendant la charge en fruits.',
+            photo != null
+                ? 'Maladie : la photo montre des lésions — alternariose possible.'
+                : 'Maladie : taches fongiques fréquentes quand les nuits sont humides.',
+          ].join('\n'),
+          aiRecommendation: [
+            'Vérifier l\'humidité du sol à 15–20 cm près des goutteurs',
+            'Inspecter les feuilles du bas : jaunissement uniforme ou taches avec anneaux',
+            'Comparer les plantes atteintes et saines sur le même rang',
+          ].join('\n'),
+          farmContext: _ctx
+              ? 'Tomate · Sousse · 2,5 ha · Goutte-à-goutte · Eau limitée · Jour 80 (fructification)'
+              : '',
+          actions: trail,
+          createdAt: DateTime.now(),
+          photo: photo?.provider,
+          photoName: photo?.name,
+        ));
     showToast(context, 'Case #2048 sent to a verified expert',
         kind: ToastKind.success);
     go(context, '/consult');
@@ -72,6 +144,8 @@ class _AssistScreenState extends State<AssistScreen> {
     final l = context.l;
     final md = context.isMd;
     final photo = _photo;
+    final ar = l.isAr; // Tunisian Arabic or French, never English
+    String t(String fr, String tn) => ar ? tn : fr;
 
     final composer = AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -79,7 +153,11 @@ class _AssistScreenState extends State<AssistScreen> {
           controller: _q,
           minLines: 3,
           maxLines: 3,
-          onChanged: (_) => setState(() {}),
+          readOnly: _voice.locked, // spoken text: only "Répéter" changes it
+          onChanged: (_) {
+            _voice.markTyped();
+            setState(() {});
+          },
           style: body(size: 18),
           textDirection: l.dir,
           textAlign: TextAlign.start,
@@ -99,6 +177,7 @@ class _AssistScreenState extends State<AssistScreen> {
                 borderSide: const BorderSide(color: AppColors.ring, width: 2)),
           ),
         ),
+        VoiceStatus(controller: _voice),
         if (photo != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -143,26 +222,16 @@ class _AssistScreenState extends State<AssistScreen> {
                 },
               ),
               AppButton(
-                  variant: BtnVariant.outline,
-                  icon: LucideIcons.mic,
-                  label: l.t('voiceQuestion'),
-                  onPressed: () => showToast(context,
-                      'Voice input — Arabic / Tunisian Derja supported (prototype)')),
-              AppButton(
                 variant: _ctx ? BtnVariant.soft : BtnVariant.outline,
                 icon: LucideIcons.mapPin,
                 trailingIcon: _ctx ? LucideIcons.check : null,
                 label: l.t('useFarmContext'),
                 onPressed: () => setState(() => _ctx = !_ctx),
               ),
-              AppButton(
-                  variant: BtnVariant.accent,
-                  icon: LucideIcons.zap,
-                  label: l.t('ask'),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
-                  onPressed:
-                      _q.text.isEmpty || _phase == 'thinking' ? null : _ask),
+              ...voiceButtons(context, _voice,
+                  onSend: _ask,
+                  busy: _phase == 'thinking',
+                  sendLabel: l.t('ask')),
             ]),
         if (_ctx)
           Padding(
@@ -202,16 +271,50 @@ class _AssistScreenState extends State<AssistScreen> {
       ]),
     );
 
+    // Prototype answer (stands in for the model / expert answer, which will
+    // arrive already in the farmer's language: Tunisian Arabic or French).
     final cause = [
-      ('Water stress', 'Soil moisture 22%, below target, and high heat.'),
-      ('Nutrient deficiency', 'Nitrogen or magnesium during fruit load.'),
       (
-        'Disease',
+        t('Stress hydrique', 'عطش النبتة'),
+        t('Humidité du sol à 22 %, sous l\'objectif, et forte chaleur.',
+            'رطوبة التربة 22%، أقل من المطلوب، والحرارة عالية.')
+      ),
+      (
+        t('Carence en nutriments', 'نقص في الغذاء'),
+        t('Azote ou magnésium pendant la charge en fruits.',
+            'نقص في الآزوت ولا المغنيزيوم وقت التثمير.')
+      ),
+      (
+        t('Maladie', 'مرض'),
         photo != null
-            ? 'Photo shows lesions — possible early blight.'
-            : 'Fungal leaf spot common in humid nights.'
+            ? t('La photo montre des lésions — alternariose possible.',
+                'التصويرة تبيّن بقع — ممكن التبقّع المبكّر.')
+            : t('Taches fongiques fréquentes quand les nuits sont humides.',
+                'تبقّع فطري يجي برشا كي تكون الليالي رطبة.')
       ),
     ];
+    final steps = [
+      t('Vérifiez l\'humidité du sol à 15–20 cm près des goutteurs',
+          'شوف رطوبة التربة على عمق 15–20 سم قرب القطّاطات'),
+      t('Inspectez les feuilles du bas : jaunissement uniforme ou taches avec anneaux',
+          'شوف الأوراق اللي من تحت: اصفرار عادي ولا بقع فيها دوائر'),
+      t('Comparez les plantes atteintes et saines sur le même rang',
+          'قارن بين النباتات المصابة والصحيحة في نفس الصف'),
+    ];
+    final hCauses = t('Causes possibles', 'الأسباب الممكنة');
+    final hDo = t('À faire maintenant', 'شنوّة تعمل توّا');
+    final hImp = t('Important :', 'مهم:');
+    final tImp = t(
+        ' Cette recommandation se base sur le profil de votre culture et des connaissances agricoles vérifiées.',
+        ' هذي النصيحة مبنية على ملف زرعك ومعلومات فلاحية موثوقة.');
+    // "اسمع" reads exactly what is displayed, in reading order.
+    final speech = [
+      '$hCauses.',
+      for (final c in cause) '${c.$1}. ${c.$2}',
+      '$hDo.',
+      for (final x in steps) '$x.',
+      '$hImp$tImp',
+    ].join(' ');
     final answer = AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Wrap(
@@ -219,12 +322,14 @@ class _AssistScreenState extends State<AssistScreen> {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 8,
             runSpacing: 8,
-            children: const [
-              TrustLabel(Trust.ai),
-              Confidence(level: Conf.medium, value: 68)
+            children: [
+              const TrustLabel(Trust.ai),
+              const Confidence(level: Conf.medium, value: 68),
+              ListenButton(
+                  controller: _voice, text: speech, lang: ar ? 'ar' : 'fr'),
             ]),
         const SizedBox(height: 16),
-        Text('Possible causes', style: display(size: 20)),
+        Text(hCauses, style: display(size: 20)),
         const SizedBox(height: 8),
         ResponsiveGrid(cols: colsFor(context, sm: 3), gap: 8, children: [
           for (final c in cause)
@@ -238,13 +343,9 @@ class _AssistScreenState extends State<AssistScreen> {
                 ])),
         ]),
         const SizedBox(height: 20),
-        Text('What to do now', style: display(size: 20)),
+        Text(hDo, style: display(size: 20)),
         const SizedBox(height: 8),
-        for (final (i, t) in const [
-          'Check soil moisture at 15–20 cm near the drippers',
-          'Inspect lower leaves: uniform yellowing vs. spots with rings',
-          'Compare affected and healthy plants in the same row'
-        ].indexed)
+        for (final (i, x) in steps.indexed)
           Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child:
@@ -254,17 +355,14 @@ class _AssistScreenState extends State<AssistScreen> {
                 Expanded(
                     child: Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(t, style: body())))
+                        child: Text(x, style: body())))
               ])),
         const SizedBox(height: 12),
         Tinted(
           color: AppColors.secondary,
           child: Text.rich(TextSpan(style: body(size: 14), children: [
-            TextSpan(
-                text: 'Important:', style: body(size: 14, w: FontWeight.w700)),
-            const TextSpan(
-                text:
-                    ' This recommendation is based on your crop profile and verified agricultural knowledge.')
+            TextSpan(text: hImp, style: body(size: 14, w: FontWeight.w700)),
+            TextSpan(text: tImp)
           ])),
         ),
       ]),

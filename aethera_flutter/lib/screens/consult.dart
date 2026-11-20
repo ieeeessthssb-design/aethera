@@ -7,6 +7,7 @@ import '../theme/lucide_icons.dart';
 import '../theme/text.dart';
 import '../widgets/ab.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/translated_text.dart';
 
 const _stages = [
   'Submitted',
@@ -181,13 +182,24 @@ class ConsultScreen extends StatelessWidget {
         Text('Case #2048 — Yellowing tomato leaves', style: display(size: 20)),
         const SizedBox(height: 12),
         ResponsiveGrid(cols: colsFor(context, sm: 2), gap: 8, children: [
-          for (final (k, v) in const [
+          for (final (k, v) in [
             ('Farmer', 'Amine Ben Salem'),
             ('Location', 'Sousse, Tunisia'),
             ('Crop', 'Tomato · day 80'),
             ('Farm size', '2.5 ha · drip · water limited'),
-            ('Symptoms', 'Yellow lower leaves, brown ringed spots'),
-            ('Previous actions', 'Increased irrigation 2 days ago')
+            // what the farmer really sent (written or dictated)
+            (
+              'Symptoms',
+              (d.submission?.note.isNotEmpty ?? false)
+                  ? d.submission!.note
+                  : 'Yellow lower leaves, brown ringed spots'
+            ),
+            (
+              'Previous actions',
+              (d.submission?.actions.isNotEmpty ?? false)
+                  ? d.submission!.actions.join(' · ')
+                  : 'Increased irrigation 2 days ago'
+            )
           ])
             Tinted(
                 radius: 8,
@@ -199,11 +211,23 @@ class ConsultScreen extends StatelessWidget {
         Row(children: [
           ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset('assets/images/tomato-leaf.jpg',
-                  width: 128,
-                  height: 96,
-                  fit: BoxFit.cover,
-                  semanticLabel: 'Case photo')),
+              child: d.submission?.photo != null
+                  ? Image(
+                      image: d.submission!.photo!,
+                      width: 128,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      semanticLabel: 'Case photo',
+                      errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/tomato-leaf.jpg',
+                          width: 128,
+                          height: 96,
+                          fit: BoxFit.cover))
+                  : Image.asset('assets/images/tomato-leaf.jpg',
+                      width: 128,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      semanticLabel: 'Case photo')),
           const SizedBox(width: 16),
           Expanded(
             child:
@@ -228,8 +252,12 @@ class ConsultScreen extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const TrustLabel(Trust.expert),
               const SizedBox(height: 12),
-              Text('Final action plan', style: display(size: 18)),
-              Text(d.expertVerdict, style: body(size: 14)),
+              Text(
+                  d.expertDecision == 'rejected'
+                      ? 'Expert correction'
+                      : 'Final action plan',
+                  style: display(size: 18)),
+              TranslatedText(d.expertVerdict, toArabic: context.l.isAr),
               const SizedBox(height: 12),
               for (final (i, p) in d.expertPlan.indexed)
                 Padding(
@@ -239,7 +267,9 @@ class ConsultScreen extends StatelessWidget {
                         children: [
                           Text('${i + 1}. ',
                               style: body(size: 14, w: FontWeight.w700)),
-                          Expanded(child: Text(p, style: body(size: 14)))
+                          Expanded(
+                              child: TranslatedText(p,
+                                  toArabic: context.l.isAr))
                         ])),
               const SizedBox(height: 4),
               Text(

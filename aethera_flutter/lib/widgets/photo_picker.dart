@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -19,7 +20,9 @@ class PickedPhoto {
 
   ImageProvider get provider => path == null
       ? const AssetImage('assets/images/tomato-leaf.jpg')
-      : FileImage(File(path!)) as ImageProvider;
+      : kIsWeb
+          ? NetworkImage(path!) // on the web the picker returns a blob: URL
+          : FileImage(File(path!)) as ImageProvider;
   String get sizeLabel => bytes >= 1048576
       ? '${(bytes / 1048576).toStringAsFixed(1)} MB'
       : '${(bytes / 1024).round()} KB';

@@ -171,10 +171,10 @@ class _NotificationBellState extends State<NotificationBell> {
         await Backend.client
             ?.from('notifications')
             .update({'read': true}).eq('read', false);
-        if (mounted)
+        if (mounted){
           setState(() => _items = [
                 for (final i in _items) {...i, 'read': true}
-              ]);
+              ]);}
       } catch (_) {}
     }
     if (!mounted) return;
@@ -352,8 +352,8 @@ class _NearbyAlertsCardState extends State<NearbyAlertsCard> {
               : base)
           .order('last_report_at', ascending: false)
           .limit(3);
-      if (mounted)
-        setState(() => _alerts = data.map(RiskAlert.fromMap).toList());
+      if (mounted){
+        setState(() => _alerts = data.map(RiskAlert.fromMap).toList());}
     } catch (_) {}
   }
 
