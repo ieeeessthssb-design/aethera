@@ -60,7 +60,6 @@ async def create_device(
     await db.refresh(device)
     return DeviceResponse.model_validate(device)
 
-
 @router.post("/{device_id}/readings", response_model=DeviceReadingIngestionResponse, status_code=201)
 async def ingest_reading(
     device_id: str,
@@ -68,38 +67,48 @@ async def ingest_reading(
     device: Device = Depends(get_device_from_key),
     db: AsyncSession = Depends(get_db),
 ):
-    """Ingest sensor readings from an ESP32 device (uses X-Device-Key auth)."""
+    """Ingest sensor readings from an ESP32 device (uses X-Device-Key auth).
+
+    - Only the metrics present in the payload are stored (a failed sensor sends null).
+    - A retry of the same payload (same device, metric, timestamp) is not stored twice.
+    """
     if device.id != device_id:
         raise HTTPException(status_code=401, detail="Device key does not match device ID")
 
-    readings = [
+    recorded_at = request.recorded_at or datetime.now(timezone.utc)
+    values = {
+        "soil_moisture": request.soil_moisture,
+        "temperature": request.temperature,
+        "humidity": request.humidity,
+    }
+    values = {m: v for m, v in values.items() if v is not None}
+
+    existing = await db.execute(
+        select(Reading.metric).where(
+            Reading.device_id == device.id,
+            Reading.recorded_at == recorded_at,
+            Reading.metric.in_(list(values)),
+        )
+    )
+    already_stored = set(existing.scalars().all())
+
+    new_readings = [
         Reading(
             device_id=device.id,
             farm_id=device.farm_id,
-            metric="soil_moisture",
-            value=request.soil_moisture,
-            recorded_at=request.recorded_at,
-            source="real",
-        ),
-        Reading(
-            device_id=device.id,
-            farm_id=device.farm_id,
-            metric="temperature",
-            value=request.temperature,
-            recorded_at=request.recorded_at,
-            source="real",
-        ),
-        Reading(
-            device_id=device.id,
-            farm_id=device.farm_id,
-            metric="humidity",
-            value=request.humidity,
-            recorded_at=request.recorded_at,
-            source="real",
-        ),
+            metric=metric,
+            value=value,
+            recorded_at=recorded_at,
+            source=request.source,
+        )
+        for metric, value in values.items()
+        if metric not in already_stored
     ]
-    db.add_all(readings)
-    # Update device last_seen_at
+    db.add_all(new_readings)
     device.last_seen_at = datetime.now(timezone.utc)
     await db.commit()
-    return DeviceReadingIngestionResponse(inserted=3, recorded_at=request.recorded_at)
+    return DeviceReadingIngestionResponse(
+        inserted=len(new_readings),
+        skipped=len(values) - len(new_readings),
+        recorded_at=recorded_at,
+    )

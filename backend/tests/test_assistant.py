@@ -1,7 +1,7 @@
 """Tests for the assistant escalation rule (CRITICAL: confidence < 0.6 triggers escalation)."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from aethera.app.services.assistant_service import StubAssistantService, HIGH_RISK_TOPICS
+from app.services.assistant_service import StubAssistantService, HIGH_RISK_TOPICS
 
 
 class MockFarm:

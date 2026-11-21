@@ -60,12 +60,16 @@ async def require_expert(
         )
     return current_user
 
-
 async def get_device_from_key(
-    x_device_key: str = Header(...),
+    x_device_key: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db),
 ) -> Device:
     """Authenticate an ESP32 device via X-Device-Key header."""
+    if not x_device_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing X-Device-Key header",
+        )
     result = await db.execute(
         select(Device).where(Device.device_key == x_device_key, Device.is_active == True)
     )
