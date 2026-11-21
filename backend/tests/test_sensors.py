@@ -1,6 +1,6 @@
 """Tests for sensor reading endpoints."""
 import pytest
-from aethera.app.services.assistant_service import StubAssistantService
+from app.services.assistant_service import StubAssistantService
 
 
 def test_simulated_data_source_enum():

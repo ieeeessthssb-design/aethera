@@ -344,26 +344,44 @@ components:
           type: string
           example: "ESP32-001"
 
-    DeviceReadingIngestionRequest:
+        DeviceReadingIngestionRequest:
       type: object
-      required: [soil_moisture, temperature, humidity, recorded_at]
+      description: |
+        At least one metric is required. A failed sensor sends null for its metric and the
+        others are still stored. recorded_at defaults to server time when omitted.
       properties:
         soil_moisture:
           type: number
           format: float
+          nullable: true
+          minimum: 0
+          maximum: 100
           example: 42.5
         temperature:
           type: number
           format: float
+          nullable: true
+          minimum: -40
+          maximum: 80
           example: 28.3
         humidity:
           type: number
           format: float
+          nullable: true
+          minimum: 0
+          maximum: 100
           example: 65.0
         recorded_at:
           type: string
           format: date-time
+          nullable: true
+          description: "UTC. Naive timestamps are treated as UTC. Future timestamps (>5 min) are rejected."
           example: "2024-02-01T14:30:00Z"
+        source:
+          type: string
+          enum: [real, simulated]
+          default: real
+          description: "The simulator script must send 'simulated'."
 
     DeviceReadingIngestionResponse:
       type: object
@@ -371,8 +389,12 @@ components:
       properties:
         inserted:
           type: integer
-          description: "Number of readings inserted (3 for the 3 metrics)"
+          description: "Number of readings inserted (one per metric present)"
           example: 3
+        skipped:
+          type: integer
+          description: "Duplicates ignored (retry of the same device, metric and timestamp)"
+          example: 0
         recorded_at:
           type: string
           format: date-time

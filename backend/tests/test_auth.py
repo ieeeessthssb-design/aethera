@@ -1,8 +1,8 @@
 """Tests for authentication endpoints."""
 import pytest
 from httpx import AsyncClient, ASGITransport
-from aethera.app.main import app
-from aethera.app.core.security import hash_password, verify_password, create_access_token, decode_token
+from app.main import app
+from app.core.security import hash_password, verify_password, create_access_token, decode_token
 
 
 # --- Unit tests for security functions ---

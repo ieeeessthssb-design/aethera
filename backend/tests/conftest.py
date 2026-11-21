@@ -20,8 +20,8 @@ def event_loop():
 @pytest.fixture(scope="session", autouse=True)
 def _create_tables():
     """Create tables in the SQLite test DB once per session."""
-    from aethera.app.core.database import Base, engine
-    import aethera.app.models  # noqa
+    from app.core.database import Base, engine
+    import app.models  # noqa
 
     async def _go():
         async with engine.begin() as c:
