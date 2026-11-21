@@ -1,0 +1,19 @@
+﻿# secrets
+.env
+*.key
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# flutter / node build output
+build/
+.dart_tool/
+node_modules/
+
+# generated or private data
+ai/retrieval/chroma_db/
+ai/retrieval/docs/*.pdf
+ai/stt/audio/
