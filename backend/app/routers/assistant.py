@@ -7,14 +7,20 @@ from app.core.dependencies import get_db, get_current_user
 from app.models.farm import Farm
 from app.models.user import User
 from app.models.advice_log import AdviceLog
+from app.models.expert_case import ExpertCase
+import json
+from datetime import datetime, timezone
 from app.schemas.assistant import (
     ChatRequest,
     ChatResponse,
     VoiceResponse,
     AdviceLogResponse,
     AdviceLogListResponse,
+    IrrigationAdviceResponse,
+    IrrigationAdviceRequest,
 )
 from app.services.assistant_service import get_assistant_service
+from app.services.irrigation_advisor import generate_irrigation_advice
 from app.services.stt_service import get_stt_service
 
 router = APIRouter(tags=["assistant"])
@@ -100,6 +106,68 @@ async def voice_chat(
         escalated=result.escalated,
         case_id=result.case_id,
     )
+
+
+
+
+@router.post(
+    "/farms/{farm_id}/irrigation/advice",
+    response_model=IrrigationAdviceResponse,
+    tags=["irrigation"],
+)
+async def irrigation_advice(
+    farm_id: str,
+    request: IrrigationAdviceRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate farm-specific irrigation advice from profile, latest sensors and weather."""
+    farm = await _get_farm_or_404(farm_id, db)
+    if farm.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this farm")
+
+    question = (request.message if request and request.message else "Should I irrigate this farm now?")
+    result = await generate_irrigation_advice(farm=farm, db=db, question=question)
+
+    answer_text = (
+        f"{result['action_label']}: {result['explanation']} "
+        + " ".join(result["recommended_steps"])
+    )
+    log_entry = AdviceLog(
+        user_id=current_user.id,
+        farm_id=farm.id,
+        question=question,
+        answer=answer_text,
+        confidence=result["confidence"],
+        escalated=result["expert_review_required"],
+        channel="text",
+    )
+    db.add(log_entry)
+    await db.flush()
+
+    expert_case_id = None
+    if result["expert_review_required"]:
+        case = ExpertCase(
+            farm_id=farm.id,
+            advice_log_id=log_entry.id,
+            farmer_name=current_user.name,
+            crop=farm.crop,
+            region=farm.region,
+            ai_diagnosis=answer_text[:2000],
+            ai_confidence=result["confidence"],
+            original_question=question,
+            ai_sources=json.dumps(result["source_labels"]),
+            status="pending",
+        )
+        db.add(case)
+        await db.flush()
+        expert_case_id = case.id
+
+    await db.commit()
+    result["farm_id"] = farm.id
+    result["expert_case_id"] = expert_case_id
+    result["generated_at"] = datetime.now(timezone.utc)
+    return IrrigationAdviceResponse(**result)
 
 
 @router.get("/advice/log", response_model=AdviceLogListResponse, tags=["advice"])
