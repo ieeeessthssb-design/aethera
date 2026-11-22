@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: str = "http://localhost:3000,http://localhost:4200,http://localhost:8080,http://localhost:4010"
+    groq_model: str = "openai/gpt-oss-20b"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
 
     @property
     def async_database_url(self) -> str:
