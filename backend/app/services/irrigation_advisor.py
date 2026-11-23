@@ -1,5 +1,7 @@
-"""Farm-aware irrigation advice using Groq (OpenAI-compatible API) and explicit confidence rules."""
+﻿"""Farm-aware irrigation advice using Groq (OpenAI-compatible API) and explicit confidence rules."""
 import json
+import logging
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -9,21 +11,175 @@ from app.core.config import settings
 from app.models.reading import Reading
 from app.services.weather_service import get_farm_weather
 
+logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are Aethera, a cautious agricultural irrigation assistant for Tunisian smallholder farmers.
-Your task is ONLY to advise on irrigation using the supplied farm profile, latest sensor readings, and weather forecast.
 
-Rules:
-- Use only facts in the supplied JSON. Never invent readings, weather, soil type, crop stage, or water availability.
-- Treat sensor readings marked simulated as demonstrations, not real measurements.
-- Consider forecast rain before recommending irrigation.
-- Do not give a fixed irrigation duration, water volume, or mm amount unless the supplied data contains a validated crop-specific irrigation threshold or irrigation schedule. If not available, say that quantity cannot safely be calculated.
-- If readings are missing, stale, simulated, or contradictory, recommend monitoring / collecting data and explain the limitation.
-- Do not diagnose crop disease or prescribe fertilizers/pesticides.
-- Do not claim to be an agronomist. Escalate uncertain/high-risk situations to a human agricultural expert.
-- Answer in the language of the user's question when possible. Keep advice practical and clear.
-- Return ONLY valid JSON with keys: action (one of irrigate_now, wait, monitor, insufficient_data), explanation (string), recommended_steps (array of short strings).
-"""
+class _LanguageMismatchError(ValueError):
+    """Raised when generated advice clearly ignores the farmer's language."""
+
+
+_FRENCH_MARKERS = {
+    "alors", "arroser", "avec", "comment", "des", "dois", "est", "il", "j", "la",
+    "le", "les", "mais", "mes", "mon", "ne", "pas", "pour", "quand", "que",
+    "quelle", "qui", "sol", "tomates", "une", "votre", "vous",
+}
+_ENGLISH_MARKERS = {
+    "a", "about", "are", "check", "do", "for", "how", "i", "is", "it", "my",
+    "need", "of", "soil", "the", "to", "tomatoes", "water", "when", "with", "you",
+}
+_DERJA_LATIN_MARKERS = {
+    "a3tini", "andi", "bech", "chouf", "chnowa", "chneya", "el", "elli", "fama",
+    "fel", "fih", "ken", "kifech", "ma", "ma3andich", "najm", "najem", "nheb",
+    "n7eb", "9is", "tawa", "thabet", "wa9tech", "walla", "walli", "ya3ni",
+}
+
+
+def _contains_arabizi_marker(text: str) -> bool:
+    return bool(re.search(r"(?:^|\W)[237589][a-z]{2,}|\b[a-z]+[237589][a-z]+", text.lower()))
+
+
+def _language_profile(question: str) -> str:
+    """Recognize supported language/script variants without external classifiers."""
+    text = question or ""
+    if re.search(r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]", text):
+        return "derja_arabic"
+
+    words = set(re.findall(r"[a-z0-9]+", text.lower()))
+    if words & _DERJA_LATIN_MARKERS or _contains_arabizi_marker(text):
+        return "derja_latin"
+
+    french_score = len(words & _FRENCH_MARKERS)
+    english_score = len(words & _ENGLISH_MARKERS)
+    if french_score >= 2 and french_score > english_score:
+        return "french"
+    if english_score >= 2 and english_score > french_score:
+        return "english"
+    return "other_latin"
+
+
+def _language_matches(text: str, profile: str) -> bool:
+    letters = re.findall(r"[A-Za-z\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]", text)
+    if not letters:
+        return False
+    arabic_count = sum(bool(re.match(r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]", c)) for c in letters)
+    latin_count = len(letters) - arabic_count
+    words = set(re.findall(r"[a-z0-9]+", text.lower()))
+
+    if profile == "derja_arabic":
+        return arabic_count / len(letters) >= 0.35
+    if profile == "derja_latin":
+        return latin_count / len(letters) >= 0.75 and bool(
+            words & _DERJA_LATIN_MARKERS or _contains_arabizi_marker(text)
+        )
+    if profile == "french":
+        return latin_count / len(letters) >= 0.75 and not (
+            len(words & _ENGLISH_MARKERS) >= 2 and len(words & _ENGLISH_MARKERS) > len(words & _FRENCH_MARKERS)
+        )
+    if profile == "english":
+        return latin_count / len(letters) >= 0.75 and not (
+            len(words & _FRENCH_MARKERS) >= 2 and len(words & _FRENCH_MARKERS) > len(words & _ENGLISH_MARKERS)
+        )
+    # For unsupported Latin-script languages, enforce a matching writing script
+    # only when the question itself clearly uses Latin characters.
+    return latin_count / len(letters) >= 0.75
+
+
+def _validate_response_language(advice: dict, question: str) -> None:
+    profile = _language_profile(question)
+    for field, values in (("explanation", [advice["explanation"]]), ("recommended_steps", advice["recommended_steps"])):
+        for value in values:
+            if not _language_matches(value, profile):
+                raise _LanguageMismatchError(
+                    f"LLM {field} does not match the farmer question's language/script ({profile})"
+                )
+
+
+def _localized_safety_prefix(question: str, missing_data: bool) -> str:
+    profile = _language_profile(question)
+    messages = {
+        "french": (
+            "Une décision fiable est impossible, car les mesures d’humidité du sol ou les prévisions locales manquent. "
+            if missing_data else "Les données disponibles sont peu fiables : ne déclenchez pas l’irrigation automatiquement. "
+        ),
+        "english": (
+            "A reliable decision is not possible because soil-moisture readings or the local forecast are missing. "
+            if missing_data else "The available data is low-confidence, so do not use it as an automatic irrigation trigger. "
+        ),
+        "derja_arabic": (
+            "ما ننجموش ناخذو قرار موثوق خاطر قياسات رطوبة التربة ولا نشرة الطقس المحلية ناقصة. "
+            if missing_data else "المعطيات المتوفرة موش موثوقة كفاية، ما تعتمدش عليها باش تشعل الري آلياً. "
+        ),
+        "derja_latin": (
+            "Ma najjmouch nakhdhou 9rar mawthou9 khater 9yessat routoubet ettorba walla ta9s el jiha na9es. "
+            if missing_data else "El ma3loumet mahech mawthou9a kfeya, ma ta3melch el ri automatique 3la 7sebha. "
+        ),
+    }
+    return messages.get(profile, messages["english"])
+
+
+def _localized_rules_fallback(question: str, action: str) -> dict:
+    profile = _language_profile(question)
+    content = {
+        "french": (
+            "Le service d’IA est indisponible ou les données ne suffisent pas pour décider. Aucun volume d’eau n’est calculé ; vérifiez la parcelle et demandez conseil à un spécialiste agricole local.",
+            ["Vérifiez manuellement l’humidité du sol près des racines.", "Confirmez que les dernières mesures viennent d’un capteur réel et sont récentes.", "Consultez les prévisions locales de pluie avant d’irriguer."],
+        ),
+        "english": (
+            "The AI service is unavailable or the available data is insufficient. No watering quantity is calculated; check the field and consult a local agricultural expert.",
+            ["Check soil moisture manually near the active root zone.", "Verify that the latest readings are current and come from a real device.", "Review the local rainfall forecast before irrigating."],
+        ),
+        "derja_arabic": (
+            "خدمة الذكاء الاصطناعي موش متوفرة ولا المعطيات ما تكفيش للقرار. ما حسبناش كمية ماء؛ تفقد الحقل واستشر خبير فلاحي من جهتك.",
+            ["قيس رطوبة التربة بيدك قريب للجذور.", "تأكد اللي آخر القياسات جديدة وجاية من جهاز حقيقي.", "شوف توقعات الشتا في جهتك قبل ما تسقي."],
+        ),
+        "derja_latin": (
+            "Khedmet el dhka el istena3i mahech mawjouda walla el ma3loumet ma tekfich. Ma 7sebnach 9addech mé; thabet fel 7a9l w es2el khbir fellahi men jihtik.",
+            ["9is routoubet ettorba bidek 9rib lel jdhour.", "Thabet elli ekher 9yesset jdod w jeyin men appareil 7a9i9i.", "Chouf ta9s el jiha 9bal ess9i."],
+        ),
+    }
+    explanation, steps = content.get(profile, content["english"])
+    return {"action": action, "explanation": explanation, "recommended_steps": steps}
+
+
+SYSTEM_PROMPT = """You are Aethera, a cautious agricultural irrigation assistant for Tunisian farmers.
+
+LANGUAGE RULES — STRICT AND MANDATORY:
+- First identify the language and writing style of the farmer_question.
+- If the question is in French, write the entire answer in natural French.
+- If the question is in Tunisian Derja written in Arabic script, write the entire answer in natural Tunisian Derja using Arabic script.
+- If the question is in Tunisian Derja written in Latin characters or Arabizi, write the entire answer in Tunisian Derja using Latin characters.
+- If the question is in another language, answer entirely in that language.
+- Never default to English.
+- The action value must remain one of the required technical identifiers, but explanation and every recommended_steps item MUST be in the farmer's language.
+- Do not mix languages.
+- Before returning the JSON, verify that explanation and every recommended step use the same language and writing style as the farmer's question.
+
+AGRICULTURAL SAFETY — STRICT:
+- Give irrigation advice only, using facts explicitly present in the supplied farm_context.
+- Never invent or assume sensor readings, weather conditions, rainfall, soil type, crop age, crop stage, irrigation equipment, water availability, or farm characteristics.
+- A crop name alone does not provide an irrigation threshold.
+- Never invent or estimate crop-specific soil-moisture thresholds.
+- Never claim that soil moisture is below or above a recommended threshold unless that exact validated threshold is explicitly provided in farm_context.
+- Never infer a threshold from crop type, crop age, season, or general agricultural knowledge.
+- Never invent irrigation duration, water volume, or millimeters of water.
+- Treat readings marked simulated as demonstrations, NOT real field measurements. Never use simulated readings alone to justify an automatic irrigation recommendation.
+- Consider the supplied weather forecast before making a recommendation. Never invent forecast information.
+- If readings are missing, stale, simulated, or contradictory, prefer monitor or insufficient_data and explain the limitation.
+- If reliable information is insufficient to decide whether irrigation is needed, do not guess. Recommend checking the field and collecting reliable measurements.
+- Do not diagnose crop diseases or prescribe fertilizers or pesticides.
+- Do not claim to be an agronomist.
+- Recommend human agricultural expert review when the situation is uncertain or high-risk.
+
+OUTPUT FORMAT — STRICT:
+- Return ONLY one valid JSON object.
+- Use exactly these three keys: action, explanation, recommended_steps.
+- Do not add other keys.
+- action must be exactly one of: irrigate_now, wait, monitor, insufficient_data.
+- explanation must be a non-empty string written entirely in the farmer's language.
+- recommended_steps must be an array containing between 1 and 6 short strings, all written entirely in the farmer's language.
+- Do not include Markdown, code fences, comments, or text outside the JSON.
+- Do not return the input data or repeat the farm context instead of giving advice.
+- Check that the JSON is valid and all required fields are present before responding."""
 
 
 def calculate_confidence(
@@ -142,45 +298,181 @@ def _action_label(action: str) -> str:
     }.get(action, "Monitor conditions")
 
 
+def _parse_llm_response(content: str, question: Optional[str] = None) -> dict:
+    parsed = json.loads(content)
+    if not isinstance(parsed, dict):
+        raise ValueError("LLM returned a non-object irrigation response")
+    action = parsed.get("action")
+
+    if action not in {"irrigate_now", "wait", "monitor", "insufficient_data"}:
+        raise ValueError("LLM returned an invalid irrigation action")
+
+    explanation = str(parsed.get("explanation", "")).strip()
+    steps = parsed.get("recommended_steps", [])
+
+    if not explanation or not isinstance(steps, list) or not 1 <= len(steps) <= 6:
+        raise ValueError("LLM returned an incomplete irrigation response")
+    if any(not isinstance(step, str) or not step.strip() for step in steps):
+        raise ValueError("LLM returned an invalid recommended step")
+
+    advice = {
+        "action": action,
+        "explanation": explanation[:2000],
+        "recommended_steps": [step.strip()[:300] for step in steps],
+    }
+    if question is not None:
+        _validate_response_language(advice, question)
+    return advice
+
+
 async def _ask_groq(farm_context: dict, question: str) -> dict:
     if not settings.groq_api_key:
         raise RuntimeError("GROQ_API_KEY is not configured")
     body = {
         "model": settings.groq_model,
         "temperature": 0.2,
-        "max_tokens": 500,
-        "response_format": {"type": "json_object"},
+        "max_tokens": 1000,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "irrigation_advice",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": [
+                                "irrigate_now",
+                                "wait",
+                                "monitor",
+                                "insufficient_data"
+                            ]
+                        },
+                        "explanation": {
+                            "type": "string"
+                        },
+                        "recommended_steps": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": [
+                        "action",
+                        "explanation",
+                        "recommended_steps"
+                    ],
+                    "additionalProperties": False
+                }
+            }
+        },
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps({
-                "farmer_question": question,
-                "farm_context": farm_context,
-            }, ensure_ascii=False, default=str)},
+            {
+                "role": "user",
+                "content": json.dumps({
+                    "farmer_question": question,
+                    "farm_context": farm_context,
+                }, ensure_ascii=False, default=str),
+            },
         ],
     }
     async with httpx.AsyncClient(timeout=25.0) as client:
+        for attempt in range(2):
+            request_body = body
+            if attempt:
+                request_body = {
+                    **body,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT + (
+                            "\n\nCORRECTION: Your previous response used the wrong language or writing script. "
+                            "Regenerate every human-readable field in the exact language and script of the farmer_question. "
+                            "For Tunisian Arabizi, use Tunisian Derja in Latin characters; for Arabic-script Derja, use Arabic characters."
+                        )},
+                        body["messages"][1],
+                    ],
+                }
+            response = await client.post(
+                settings.groq_base_url.rstrip("/") + "/chat/completions",
+                headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+                json=request_body,
+            )
+
+            if response.is_error:
+                logger.error(
+                    "Groq HTTP %s",
+                    response.status_code,
+                )
+            response.raise_for_status()
+            payload = response.json()
+            raw_content = payload["choices"][0]["message"]["content"]
+            try:
+                return _parse_llm_response(raw_content, question)
+            except _LanguageMismatchError:
+                if attempt:
+                    raise
+    raise RuntimeError("Groq response was not accepted")
+
+
+async def _ask_ollama(farm_context: dict, question: str) -> dict:
+    output_instruction = """
+You must generate an irrigation recommendation, not repeat the input data.
+
+Return exactly this JSON structure:
+{
+  "action": "monitor",
+  "explanation": "A complete explanation in the farmer's language.",
+  "recommended_steps": [
+    "A practical step in the farmer's language."
+  ]
+}
+
+Choose action only from: irrigate_now, wait, monitor, insufficient_data.
+Use only the supplied farm context. If reliable information is insufficient,
+choose monitor or insufficient_data. Never invent measurements or irrigation quantities.
+The example values above are structural examples, not recommendations.
+"""
+
+    user_payload = {
+        "farmer_question": question,
+        "farm_context": farm_context,
+        "task": "Give a safe irrigation recommendation for this farmer.",
+        "required_output": {
+            "action": "monitor",
+            "explanation": "string in the farmer's language",
+            "recommended_steps": ["string in the farmer's language"]
+        }
+    }
+
+    body = {
+        "model": settings.ollama_model,
+        "stream": False,
+        "format": "json",
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "num_predict": 700,
+        },
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT + "\n\n" + output_instruction},
+            {
+                "role": "user",
+                "content": json.dumps(user_payload, ensure_ascii=False, default=str),
+            },
+        ],
+    }
+
+    timeout = httpx.Timeout(settings.ollama_timeout_seconds)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.post(
-            settings.groq_base_url.rstrip("/") + "/chat/completions",
-            headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+            settings.ollama_base_url.rstrip("/") + "/api/chat",
             json=body,
         )
         response.raise_for_status()
         payload = response.json()
-    content = payload["choices"][0]["message"]["content"]
-    parsed = json.loads(content)
-    action = parsed.get("action")
-    if action not in {"irrigate_now", "wait", "monitor", "insufficient_data"}:
-        raise ValueError("LLM returned an invalid irrigation action")
-    explanation = str(parsed.get("explanation", "")).strip()
-    steps = parsed.get("recommended_steps", [])
-    if not explanation or not isinstance(steps, list):
-        raise ValueError("LLM returned an incomplete irrigation response")
-    return {
-        "action": action,
-        "explanation": explanation[:2000],
-        "recommended_steps": [str(step)[:300] for step in steps[:6]],
-    }
 
+    raw_content = payload["message"]["content"]
+    return _parse_llm_response(raw_content, question)
 
 async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
     readings = await _latest_readings(db, farm.id)
@@ -208,15 +500,25 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
     }
 
     provider = settings.assistant_provider.lower()
-    try:
-        if provider == "groq":
+    generated = None
+
+    if provider == "groq":
+        try:
             generated = await _ask_groq(context, question)
             labels.append("llm_groq")
-        else:
-            raise RuntimeError("LLM provider is not configured; using safe rules fallback")
-    except (httpx.HTTPError, RuntimeError, ValueError, KeyError, IndexError, json.JSONDecodeError):
-        # A safe deterministic fallback makes local demos work without an API key.
+        except Exception:
+            logger.exception("Groq failed; trying Ollama")
+
+    if generated is None and provider in {"groq", "ollama"}:
+        try:
+            generated = await _ask_ollama(context, question)
+            labels.append("llm_ollama")
+        except Exception:
+            logger.exception("Ollama failed; using safe rules fallback")
+
+    if generated is None:
         moisture = readings.get("soil_moisture")
+
         if not moisture:
             action = "insufficient_data"
         elif moisture["source"] == "simulated":
@@ -225,19 +527,8 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
             action = "wait"
         else:
             action = "monitor"
-        generated = {
-            "action": action,
-            "explanation": (
-                "The AI service is unavailable or the available data is insufficient. "
-                "This fallback does not issue an automatic watering quantity; check the field "
-                "and consult a local agronomist before changing the irrigation schedule."
-            ),
-            "recommended_steps": [
-                "Check soil moisture manually near the active root zone.",
-                "Verify that the latest sensor readings are current and from a real device.",
-                "Review the local rainfall forecast before irrigating.",
-            ],
-        }
+
+        generated = _localized_rules_fallback(question, action)
         labels.append("rules_fallback")
 
     # Never present simulated readings as field evidence or high-confidence advice.
@@ -253,14 +544,12 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
     if not readings.get("soil_moisture") or not weather:
         generated["action"] = "insufficient_data"
         generated["explanation"] = (
-            "A reliable irrigation decision cannot be made because soil-moisture "
-            "readings or the local weather forecast are missing. " + generated["explanation"]
+            _localized_safety_prefix(question, missing_data=True) + generated["explanation"]
         )[:2000]
     elif confidence < 0.60 and generated["action"] == "irrigate_now":
         generated["action"] = "monitor"
         generated["explanation"] = (
-            "The available data is low-confidence, so do not use this as an automatic "
-            "irrigation trigger. " + generated["explanation"]
+            _localized_safety_prefix(question, missing_data=False) + generated["explanation"]
         )[:2000]
 
     escalated = confidence < 0.60 or generated["action"] == "insufficient_data"
