@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:4200,http://localhost:8080,http://localhost:4010"
     groq_model: str = "openai/gpt-oss-20b"
     groq_base_url: str = "https://api.groq.com/openai/v1"
+    # Ollama (local LLM)
+    ollama_base_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "qwen3:4b"
+    ollama_timeout_seconds: int = 120
 
     @property
     def async_database_url(self) -> str:
