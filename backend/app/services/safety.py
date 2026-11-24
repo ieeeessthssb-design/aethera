@@ -6,8 +6,8 @@ Deterministic, offline, no dependencies. Runs BEFORE any answer is generated
 Verdicts, strongest first:
   EMERGENCY         poisoning / exposure -> no agronomy answer, urgent medical wording
   PESTICIDE_DOSAGE  dose, mixing ratio, concentration, spray schedule -> REFUSE
-  PESTICIDE_TOPIC   any other pesticide question -> escalate, no product advice
-  FERTILIZER_DOSAGE exact fertilizer rates -> escalate (needs soil analysis)
+  PESTICIDE_TOPIC   any other pesticide question -> REFUSE product advice + escalate
+  FERTILIZER_DOSAGE exact fertilizer rates -> REFUSE + escalate (needs soil analysis)
   DISEASE           disease / pest diagnosis in text -> answer cautiously + escalate
   UNCLEAR           empty, too short or nonsense -> ask to rephrase + escalate
   OK                nothing special
