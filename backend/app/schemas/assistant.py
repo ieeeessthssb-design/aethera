@@ -25,6 +25,17 @@ class VoiceResponse(BaseModel):
     case_id: Optional[str] = None
 
 
+class VoiceTranscriptionResponse(BaseModel):
+    transcript: str
+    requires_confirmation: bool = True
+
+
+class VoiceAnswerRequest(BaseModel):
+    farm_id: str
+    transcript: str = Field(..., min_length=1, max_length=500)
+    confirmed: bool = False
+
+
 class AdviceLogResponse(BaseModel):
     model_config = {"from_attributes": True}
 
@@ -55,6 +66,7 @@ class IrrigationAdviceResponse(BaseModel):
     confidence_level: str
     confidence_reasons: List[str]
     source_labels: List[str]
+    knowledge_sources: List[str] = Field(default_factory=list)
     source_label: str
     sensor_data: dict
     weather: Optional[dict] = None

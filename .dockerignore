@@ -1,0 +1,17 @@
+# Build only the FastAPI backend and its small runtime retrieval index.
+**
+!backend/
+!backend/**
+!ai/
+!ai/retrieval/
+!ai/retrieval/retrieve.py
+!ai/retrieval/chunks.json
+
+# Never send local secrets, databases, virtual environments or caches to Docker.
+backend/.env
+backend/test.db
+backend/.venv/
+backend/**/__pycache__/
+backend/.pytest_cache/
+.git/
+frontend/

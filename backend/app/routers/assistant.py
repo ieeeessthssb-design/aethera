@@ -18,6 +18,8 @@ from app.schemas.assistant import (
     AdviceLogListResponse,
     IrrigationAdviceResponse,
     IrrigationAdviceRequest,
+    VoiceTranscriptionResponse,
+    VoiceAnswerRequest,
 )
 from app.services.assistant_service import get_assistant_service
 from app.services.irrigation_advisor import generate_irrigation_advice
@@ -32,6 +34,55 @@ async def _get_farm_or_404(farm_id: str, db: AsyncSession) -> Farm:
     if farm is None:
         raise HTTPException(status_code=404, detail="Farm not found")
     return farm
+
+
+async def _create_irrigation_advice(
+    farm_id: str, question: str, current_user: User, db: AsyncSession, channel: str
+) -> IrrigationAdviceResponse:
+    farm = await _get_farm_or_404(farm_id, db)
+    if farm.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this farm")
+
+    result = await generate_irrigation_advice(farm=farm, db=db, question=question)
+    answer_text = (
+        f"{result['action_label']}: {result['explanation']} "
+        + " ".join(result["recommended_steps"])
+    )
+    log_entry = AdviceLog(
+        user_id=current_user.id,
+        farm_id=farm.id,
+        question=question,
+        answer=answer_text,
+        confidence=result["confidence"],
+        escalated=result["expert_review_required"],
+        channel=channel,
+    )
+    db.add(log_entry)
+    await db.flush()
+
+    expert_case_id = None
+    if result["expert_review_required"]:
+        case = ExpertCase(
+            farm_id=farm.id,
+            advice_log_id=log_entry.id,
+            farmer_name=current_user.name,
+            crop=farm.crop,
+            region=farm.region,
+            ai_diagnosis=answer_text[:2000],
+            ai_confidence=result["confidence"],
+            original_question=question,
+            ai_sources=json.dumps(result["source_labels"]),
+            status="pending",
+        )
+        db.add(case)
+        await db.flush()
+        expert_case_id = case.id
+
+    await db.commit()
+    result["farm_id"] = farm.id
+    result["expert_case_id"] = expert_case_id
+    result["generated_at"] = datetime.now(timezone.utc)
+    return IrrigationAdviceResponse(**result)
 
 
 @router.post("/assistant/chat", response_model=ChatResponse)
@@ -122,52 +173,44 @@ async def irrigation_advice(
     db: AsyncSession = Depends(get_db),
 ):
     """Generate farm-specific irrigation advice from profile, latest sensors and weather."""
+    question = (request.message if request and request.message else "Should I irrigate this farm now?")
+    return await _create_irrigation_advice(farm_id, question, current_user, db, "text")
+
+
+@router.post("/assistant/voice/transcribe", response_model=VoiceTranscriptionResponse)
+async def voice_transcribe(
+    farm_id: str = Form(...),
+    audio: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Transcribe audio and return it for farmer confirmation before answering."""
     farm = await _get_farm_or_404(farm_id, db)
     if farm.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this farm")
+    stt = get_stt_service()
+    transcript = await stt.transcribe(await audio.read(), content_type=audio.content_type)
+    return VoiceTranscriptionResponse(transcript=transcript)
 
-    question = (request.message if request and request.message else "Should I irrigate this farm now?")
-    result = await generate_irrigation_advice(farm=farm, db=db, question=question)
 
-    answer_text = (
-        f"{result['action_label']}: {result['explanation']} "
-        + " ".join(result["recommended_steps"])
+@router.post(
+    "/assistant/voice/answer",
+    response_model=IrrigationAdviceResponse,
+    tags=["irrigation"],
+)
+async def voice_answer(
+    request: VoiceAnswerRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Answer only the transcript the farmer explicitly confirmed or edited."""
+    if not request.confirmed:
+        raise HTTPException(status_code=400, detail="Confirm the transcript before requesting advice")
+    if not request.transcript.strip():
+        raise HTTPException(status_code=400, detail="The confirmed transcript cannot be empty")
+    return await _create_irrigation_advice(
+        request.farm_id, request.transcript, current_user, db, "voice"
     )
-    log_entry = AdviceLog(
-        user_id=current_user.id,
-        farm_id=farm.id,
-        question=question,
-        answer=answer_text,
-        confidence=result["confidence"],
-        escalated=result["expert_review_required"],
-        channel="text",
-    )
-    db.add(log_entry)
-    await db.flush()
-
-    expert_case_id = None
-    if result["expert_review_required"]:
-        case = ExpertCase(
-            farm_id=farm.id,
-            advice_log_id=log_entry.id,
-            farmer_name=current_user.name,
-            crop=farm.crop,
-            region=farm.region,
-            ai_diagnosis=answer_text[:2000],
-            ai_confidence=result["confidence"],
-            original_question=question,
-            ai_sources=json.dumps(result["source_labels"]),
-            status="pending",
-        )
-        db.add(case)
-        await db.flush()
-        expert_case_id = case.id
-
-    await db.commit()
-    result["farm_id"] = farm.id
-    result["expert_case_id"] = expert_case_id
-    result["generated_at"] = datetime.now(timezone.utc)
-    return IrrigationAdviceResponse(**result)
 
 
 @router.get("/advice/log", response_model=AdviceLogListResponse, tags=["advice"])

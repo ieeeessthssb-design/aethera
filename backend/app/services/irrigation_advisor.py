@@ -1,4 +1,4 @@
-﻿"""Farm-aware irrigation advice using Groq (OpenAI-compatible API) and explicit confidence rules."""
+"""Farm-aware irrigation advice using Groq (OpenAI-compatible API) and explicit confidence rules."""
 import json
 import logging
 import re
@@ -9,6 +9,7 @@ import httpx
 
 from app.core.config import settings
 from app.services import safety
+from app.services.agronomy_retrieval import retrieve_agronomy_context
 from app.models.reading import Reading
 from app.services.weather_service import get_farm_weather
 
@@ -142,6 +143,40 @@ def _localized_rules_fallback(question: str, action: str) -> dict:
     return {"action": action, "explanation": explanation, "recommended_steps": steps}
 
 
+def _localized_safety_reply(question: str, verdict) -> str:
+    """Use Latin-script Derja for safety messages when the question is Arabizi."""
+    if _language_profile(question) != "derja_latin":
+        return verdict.reply or safety.expert_notice(verdict.language)
+    if verdict.category == safety.Category.EMERGENCY:
+        return (
+            "Hedhi tnajem tkoun 7alet tasammom: 3ayet SAMU 190 walla emchi lel sbitar taw. "
+            "Ba3ed el personne 3al produit, ma tkhallihach traja3 ken ma 9allekch tbib, "
+            "w khoudh etiketa mta3 el produit. Es2el khbir fellahi."
+        )
+    if verdict.category == safety.Category.PESTICIDE_DOSAGE:
+        return (
+            "Ma najjemch na3tik dose, nisbet khalet, walla wa9t rch mta3 el mbid. "
+            "Es2el khbir fellahi walla technicien CRDA w ettabe3 etiketa mta3 el produit."
+        )
+    if verdict.category == safety.Category.PESTICIDE_TOPIC:
+        return (
+            "Ma nans7ekch b produit walla traitement mta3 mbid. Es2el khbir fellahi "
+            "w ettabe3 etiketa mta3 el produit."
+        )
+    if verdict.category == safety.Category.UNCLEAR:
+        return "Ma fhemtch sou2alek bch njewbek b aman. 9olli chnowa el mahsoul w chnowa el mochkel."
+    return verdict.reply or safety.expert_notice(verdict.language)
+
+
+def _localized_expert_footer(question: str, escalated: bool, language: str) -> str:
+    if _language_profile(question) == "derja_latin":
+        return (
+            "Es2el khbir fellahi 9bal ma ta3mel ay 7aja." if escalated
+            else "Hedhi ma3louma 3amma; es2el khbir 3la 7a9lek."
+        )
+    return safety.expert_notice(language) if escalated else safety.general_footer(language)
+
+
 SYSTEM_PROMPT = """You are Aethera, a cautious agricultural irrigation assistant for Tunisian farmers.
 
 LANGUAGE RULES — STRICT AND MANDATORY:
@@ -154,6 +189,13 @@ LANGUAGE RULES — STRICT AND MANDATORY:
 - The action value must remain one of the required technical identifiers, but explanation and every recommended_steps item MUST be in the farmer's language.
 - Do not mix languages.
 - Before returning the JSON, verify that explanation and every recommended step use the same language and writing style as the farmer's question.
+
+AGRONOMY KNOWLEDGE RETRIEVAL — STRICT:
+- The farm_context may include verified_agronomy_references retrieved from the local document index.
+- Use these excerpts only when relevant; they are supporting references, not farm-specific measurements.
+- Never treat a general document passage as a sensor reading, local weather forecast, or validated threshold for this specific farm.
+- Do not invent sources, titles, years, pages, facts, or citations. The API separately returns exact retrieved source citations.
+- If no relevant passage is supplied, do not claim that a knowledge-base source supports the answer.
 
 AGRICULTURAL SAFETY — STRICT:
 - Give irrigation advice only, using facts explicitly present in the supplied farm_context.
@@ -476,10 +518,31 @@ The example values above are structural examples, not recommendations.
     return _parse_llm_response(raw_content, question)
 
 async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
-    # Task 34: same safety rules as the chat. A refused question (pesticide dose, poisoning, unclear
-    # text) is never sent to Groq or Ollama; it gets the refusal wording and goes to an expert.
+    # Task 34 runs first: refused questions must not trigger database, retrieval,
+    # weather, or model work.
     verdict = safety.evaluate_message(question) if (question or "").strip() else None
     refused = bool(verdict and verdict.refuse)
+
+    if refused:
+        labels = ["safety_rules"]
+        generated = {
+            "action": "insufficient_data",
+            "explanation": _localized_safety_reply(question, verdict),
+            "recommended_steps": [_localized_expert_footer(question, True, verdict.language)],
+        }
+        return {
+            **generated,
+            "action_label": _action_label(generated["action"]),
+            "confidence": 0.0,
+            "confidence_level": "low",
+            "confidence_reasons": ["Question requires safety refusal or clarification"],
+            "source_labels": labels,
+            "knowledge_sources": [],
+            "source_label": "safety_rules",
+            "sensor_data": {"soil_moisture": None, "temperature": None, "humidity": None},
+            "weather": None,
+            "expert_review_required": True,
+        }
 
     readings = await _latest_readings(db, farm.id)
     weather = await get_farm_weather(farm.lat, farm.lng)
@@ -505,22 +568,27 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
         "weather_forecast": weather,
     }
 
-    provider = settings.assistant_provider.lower()
+    # Task 33: retrieve only passages from the locally indexed, licence-reviewed
+    # agronomy documents. Safety refusals must never reach retrieval or an LLM.
+    knowledge_context, knowledge_sources = ([], [])
+    try:
+        knowledge_context, knowledge_sources = retrieve_agronomy_context(question, limit=3)
+    except Exception:
+        logger.exception("Agronomy retrieval failed; continuing without retrieved sources")
+
+    context["verified_agronomy_references"] = knowledge_context
+    if knowledge_sources:
+        labels.append("agronomy_rag")
+
     generated = None
 
-    if provider == "groq" and not refused:
-        try:
-            generated = await _ask_groq(context, question)
-            labels.append("llm_groq")
-        except Exception:
-            logger.exception("Groq failed; trying Ollama")
-
-    if generated is None and provider in {"groq", "ollama"} and not refused:
-        try:
-            generated = await _ask_ollama(context, question)
-            labels.append("llm_ollama")
-        except Exception:
-            logger.exception("Ollama failed; using safe rules fallback")
+    try:
+        generated = await _ask_groq(context, question)
+        labels.append("llm_groq")
+    except Exception:
+        # Task 32 explicitly uses the hosted Groq API. An unavailable provider
+        # produces a localized deterministic fallback; never switch to Ollama.
+        logger.exception("Groq irrigation advisor failed; using safe rules fallback")
 
     if generated is None:
         moisture = readings.get("soil_moisture")
@@ -558,15 +626,20 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
             _localized_safety_prefix(question, missing_data=False) + generated["explanation"]
         )[:2000]
 
-    if refused:
-        generated["explanation"] = verdict.reply
-        labels.append("safety_rules")
-
     escalated = (
         confidence < 0.60
         or generated["action"] == "insufficient_data"
         or bool(verdict and verdict.escalate)
     )
+
+    # Task 34: apply the same localized expert footer used by the chat assistant.
+    # Refusal messages already contain their own purpose-built safety wording.
+    if verdict and not refused:
+        generated["explanation"] = (
+            generated["explanation"] + "\n\n"
+            + _localized_expert_footer(question, escalated, verdict.language)
+        )[:2000]
+
     return {
         **generated,
         "action_label": _action_label(generated["action"]),
@@ -574,6 +647,7 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
         "confidence_level": level,
         "confidence_reasons": reasons,
         "source_labels": list(dict.fromkeys(labels)),
+        "knowledge_sources": knowledge_sources,
         "source_label": " + ".join(dict.fromkeys(labels)) or "farm_profile",
         "sensor_data": {
             metric: (

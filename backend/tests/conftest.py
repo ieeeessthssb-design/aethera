@@ -1,31 +1,29 @@
-"""Pytest configuration and fixtures."""
-import pytest
-import asyncio
+"""Pytest configuration and isolated async database lifecycle."""
 import os
 
-# Use in-memory SQLite for tests
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+import pytest_asyncio
+
+# Never let Compose or a developer's local DATABASE_URL point tests at the
+# application database. TEST_DATABASE_URL is an explicit opt-in override.
+os.environ["DATABASE_URL"] = os.environ.get(
+    "TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db"
+)
+# The engine is disposed around every test so async connections never cross loops.
 os.environ.setdefault("JWT_SECRET", "test-secret-do-not-use-in-production")
 os.environ.setdefault("SIMULATE_SENSORS", "true")
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _create_tables():
-    """Create tables in the SQLite test DB once per session."""
+@pytest_asyncio.fixture(autouse=True)
+async def _isolated_database():
+    """Create a clean schema on the test's loop and dispose its connections."""
     from app.core.database import Base, engine
-    import app.models  # noqa
+    import app.models  # noqa: F401
 
-    async def _go():
-        async with engine.begin() as c:
-            await c.run_sync(Base.metadata.drop_all)
-            await c.run_sync(Base.metadata.create_all)
+    await engine.dispose()
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+        await connection.run_sync(Base.metadata.create_all)
 
-    asyncio.run(_go())
+    yield
+
+    await engine.dispose()
