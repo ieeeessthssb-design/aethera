@@ -13,6 +13,7 @@ import json
 import uuid
 
 from app.core.config import settings
+from app.services import safety
 
 
 # High-risk topics always escalate to an expert regardless of confidence
@@ -36,9 +37,9 @@ KNOWLEDGE_BASE = [
     },
     {
         "keywords": ["سقي", "السقي", "نسقي", "ري", "irrigation", "water", "arrosage", "رطوبة"],
-        "answer_ar": "أفضل وقت للسقي هو المساء بعد الغروب أو الصباح الباكر لتجنب التبخر. مع نظام التقطير، اسقِ يومياً لمدة ساعة واحدة في موسم الصيف.",
-        "answer_fr": "Le meilleur moment pour irriguer est le soir ou tôt le matin. Avec un système de goutte-à-goutte, une heure par jour en été.",
-        "answer_en": "Best time to irrigate is evening or early morning to reduce evaporation. With drip irrigation, 1 hour/day in summer.",
+        "answer_ar": "أفضل وقت للري هو المساء أو الصباح الباكر لتقليل التبخر. عدّل مدة الري حسب رطوبة التربة والمحصول والطقس المحلي.",
+        "answer_fr": "Le meilleur moment pour irriguer est le soir ou tôt le matin. Ajustez la durée selon l'humidité du sol, la culture et la météo locale.",
+        "answer_en": "Best time to irrigate is evening or early morning to reduce evaporation. Adjust the duration to soil moisture, the crop and local weather.",
         "confidence": 0.88,
         "sources": ["INAT Tunisia irrigation guide", "FAO crop management"],
         "high_risk": False,
@@ -63,9 +64,9 @@ KNOWLEDGE_BASE = [
     },
     {
         "keywords": ["سماد", "تسميد", "fertilizer", "engrais", "NPK"],
-        "answer_ar": "استخدم سماداً متوازناً NPK 20-20-20 في مرحلة النمو. قلل الآزوت وزد البوتاسيوم عند الإثمار. لا تبالغ في التسميد لتجنب حرق الجذور.",
-        "answer_fr": "Utilisez un engrais équilibré NPK 20-20-20 en phase de croissance.",
-        "answer_en": "Use balanced NPK 20-20-20 fertilizer during growth phase. Reduce nitrogen and increase potassium at fruiting stage.",
+        "answer_ar": "استخدم سمادًا متوازنًا في مرحلة النمو، وعدّل التركيبة حسب المحصول وحالة التربة. لا تبالغ في التسميد لتجنب حرق الجذور. استشر خبيرًا زراعيًا قبل تحديد الجرعة.",
+        "answer_fr": "Utilisez un engrais équilibré en phase de croissance, adapté à la culture et au sol. Évitez l'excès pour ne pas brûler les racines. Demandez l'avis d'un expert avant de fixer une dose.",
+        "answer_en": "Use a balanced fertilizer during the growth phase, adapted to the crop and soil. Avoid over-fertilizing to prevent root burn. Check with an expert before choosing a dose.",
         "confidence": 0.78,
         "sources": ["FAO fertilization guidelines"],
         "high_risk": False,
@@ -125,6 +126,18 @@ class StubAssistantService(AssistantInterface):
     ) -> AssistantResult:
         message_lower = message.lower()
 
+        # Task 34: safety rules run FIRST. A refused question (pesticide dose, poisoning,
+        # unclear text, ...) never reaches the knowledge base, and always creates an expert case.
+        verdict = safety.evaluate_message(message)
+        if verdict.refuse:
+            case_id = await self._create_expert_case(
+                message=message, answer=verdict.reply, confidence=0.0, sources=[],
+                farm=farm, user=user, db=db,
+            )
+            return AssistantResult(
+                answer=verdict.reply, confidence=0.0, sources=[], escalated=True, case_id=case_id,
+            )
+
         # Check for high-risk topics first
         is_high_risk = any(kw.lower() in message_lower for kw in HIGH_RISK_TOPICS)
 
@@ -153,7 +166,7 @@ class StubAssistantService(AssistantInterface):
             sources = []
 
         # Apply escalation rule
-        should_escalate = confidence < 0.6 or is_high_risk
+        should_escalate = confidence < 0.6 or is_high_risk or verdict.escalate
         case_id = None
 
         if should_escalate:
@@ -166,7 +179,9 @@ class StubAssistantService(AssistantInterface):
                 user=user,
                 db=db,
             )
-            answer = answer + "\n\n⚠️ تم إرسال حالتك لمراجعة خبير زراعي متخصص."
+
+        # Mandatory expert wording on every answer, in the language of the question.
+        answer = safety.finalize_answer(answer, should_escalate, verdict.language)
 
         return AssistantResult(
             answer=answer,

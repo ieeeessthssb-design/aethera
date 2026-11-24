@@ -8,6 +8,7 @@ from typing import Any, Optional
 import httpx
 
 from app.core.config import settings
+from app.services import safety
 from app.models.reading import Reading
 from app.services.weather_service import get_farm_weather
 
@@ -475,6 +476,11 @@ The example values above are structural examples, not recommendations.
     return _parse_llm_response(raw_content, question)
 
 async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
+    # Task 34: same safety rules as the chat. A refused question (pesticide dose, poisoning, unclear
+    # text) is never sent to Groq or Ollama; it gets the refusal wording and goes to an expert.
+    verdict = safety.evaluate_message(question) if (question or "").strip() else None
+    refused = bool(verdict and verdict.refuse)
+
     readings = await _latest_readings(db, farm.id)
     weather = await get_farm_weather(farm.lat, farm.lng)
     confidence, level, reasons, labels = calculate_confidence(readings, weather, farm)
@@ -502,14 +508,14 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
     provider = settings.assistant_provider.lower()
     generated = None
 
-    if provider == "groq":
+    if provider == "groq" and not refused:
         try:
             generated = await _ask_groq(context, question)
             labels.append("llm_groq")
         except Exception:
             logger.exception("Groq failed; trying Ollama")
 
-    if generated is None and provider in {"groq", "ollama"}:
+    if generated is None and provider in {"groq", "ollama"} and not refused:
         try:
             generated = await _ask_ollama(context, question)
             labels.append("llm_ollama")
@@ -552,7 +558,15 @@ async def generate_irrigation_advice(farm, db, question: str = "") -> dict:
             _localized_safety_prefix(question, missing_data=False) + generated["explanation"]
         )[:2000]
 
-    escalated = confidence < 0.60 or generated["action"] == "insufficient_data"
+    if refused:
+        generated["explanation"] = verdict.reply
+        labels.append("safety_rules")
+
+    escalated = (
+        confidence < 0.60
+        or generated["action"] == "insufficient_data"
+        or bool(verdict and verdict.escalate)
+    )
     return {
         **generated,
         "action_label": _action_label(generated["action"]),
