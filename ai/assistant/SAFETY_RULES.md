@@ -24,8 +24,13 @@ questions are never sent to the LLM; the response is `monitor` + the refusal tex
 **Refusals report confidence 0.0.** A refusal is not an agronomic answer, so there is no confidence to report.
 
 ## Known limits
-- Keyword based. It will miss unusual phrasing and misspellings, especially Tunisian Derja in Latin letters (Arabizi).
-  Have Derja speakers extend the lists in `safety.py` and re-test.
+- Keyword based. It will miss unusual phrasing and misspellings. Derja in Latin letters (Arabizi) is covered by a
+  starter list only, and spelling varies a lot (`9adech`, `qadech`, `gadech`). Have Derja speakers extend the lists
+  in `safety.py` and re-test.
+- `EMERGENCY_NUMBER = "190"` (SAMU) was verified against public sources (July 2026). Coverage and response
+  time may vary by region, so refusal texts also tell the farmer to go to the nearest hospital.
+- Not reviewed by an agronomist or lawyer.
+
 - `EMERGENCY_NUMBER = "190"` (SAMU) was verified against public sources (July 2026). It may work mainly in
   cities, so refusal texts also tell the farmer to go to the nearest hospital.
 - Not reviewed by an agronomist or lawyer.

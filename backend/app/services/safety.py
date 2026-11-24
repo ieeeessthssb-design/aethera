@@ -144,6 +144,25 @@ DISEASE_TERMS = [
 DISEASE_TERMS = [t for t in DISEASE_TERMS if t != "من"]
 
 
+# Arabizi (Derja written in Latin letters). Digits stand for Arabic sounds: 9 = q, 3 = ayn, 7 = h.
+# Starter lists: review them with Derja speakers and extend them with real spellings.
+PESTICIDE_TERMS += ["mubid", "mbidet", "nrosh", "nrach"]
+
+DOSAGE_TERMS += [
+    "9adech", "9dech", "qadech", "qaddech", "gadech", "gaddech", "gdech", "kadech", "kaddech",
+    "ch7al", "shhal", "nisba", "kmiya", "nkhalet", "nkhallet",
+]
+
+POISONING_TERMS += [
+    "tsemmem", "tsammam", "tsamem", "tsemem", "chrab", "chrabt", "chreb", "bel3", "bla3", "bala3",
+    "mat", "matet", "weldi", "bnayti", "tfli",
+]
+
+POISON_CONTEXT_TERMS += ["mbid", "mobid", "mbidat", "mubid", "sem", "semm", "kimawi", "dwa", "dawa"]
+
+FERTILIZER_TERMS += ["semed", "smed"]
+
+
 # -------------------------------------------------------------------- messages
 
 MESSAGES: Dict[str, Dict[str, str]] = {
