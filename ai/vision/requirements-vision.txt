@@ -1,0 +1,6 @@
+# Training / evaluation / inference for ai/vision (not needed by the backend tests).
+# Install the CPU or CUDA build of torch from https://pytorch.org/get-started/locally/ for your machine.
+torch>=2.2
+torchvision>=0.17
+pillow>=10
+pytest>=8

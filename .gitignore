@@ -15,5 +15,15 @@ node_modules/
 
 # generated or private data
 ai/retrieval/chroma_db/
-ai/retrieval/docs/*.pdf
+ai/retrieval/docs/*
+!ai/retrieval/docs/.gitkeep
 ai/stt/audio/
+data/
+models/
+backup_models/
+final_probe_convnext/
+reports/debug/
+reports/**/*.jpg
+*.zip
+*.db
+tree_data.txt
