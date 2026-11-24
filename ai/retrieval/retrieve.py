@@ -26,6 +26,16 @@ EXPAND = {
     "تنقيط": "goutte drip goutte-a-goutte", "قطرة": "goutte drip", "رطوبة": "humidite moisture soil",
     "مردود": "rendement yield", "ملوحة": "salinite salinity",
 }
+# Common Tunisian Derja transliterations (Arabizi and Latin script).
+EXPAND.update({
+    "nes9i": "irrigation irriguer arrosage", "nse9i": "irrigation irriguer arrosage",
+    "s9i": "irrigation irriguer arrosage", "ri": "irrigation irriguer arrosage",
+    "zitoun": "olivier olive", "tomates": "tomate tomato", "tomate": "tomate tomato",
+    "torba": "sol soil", "routouba": "humidite moisture soil", "ma": "eau water",
+    "ta9s": "meteo weather pluie rain", "chit": "hiver winter pluie rain",
+    "wa9tech": "quand when", "3andi": "farm parcelle culture",
+})
+
 STOP = set("""le la les un une des de du et en au aux ce ces est sont que qui dans pour par sur
 avec the a an of and or to in is are be for on with as by at from this that it its quand comment
 quel quelle faut-il il y a ou what when how should i do""".split())

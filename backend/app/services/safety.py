@@ -88,7 +88,8 @@ def _has(text: str, terms) -> bool:
 PESTICIDE_TERMS = [
     "pesticide", "pesticides", "herbicide", "fungicide", "fongicide", "fongicides", "insecticide", "acaricide",
     "nematicide", "rodenticide", "molluscicide", "agrochemical", "weed killer", "weedkiller",
-    "spray", "spraying", "phytosanitaire", "phytosanitaires", "produit phyto", "pulveriser",
+    "spray", "spraying", "chemical", "chemicals", "produit chimique", "mix chemicals",
+    "phytosanitaire", "phytosanitaires", "produit phyto", "pulveriser",
     "pulverisation", "traitement chimique", "bouillie", "insecticides",
     "glyphosate", "mancozeb", "imidacloprid", "deltamethrin", "chlorpyrifos", "cypermethrin",
     "copper sulfate", "sulfate de cuivre", "bouillie bordelaise", "roundup",

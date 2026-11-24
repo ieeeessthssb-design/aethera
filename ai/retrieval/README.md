@@ -8,9 +8,10 @@ The Aethera assistant looks up passages in a small set of verified agronomy docu
 - Other sources listed in the CSV are NOT stored in this repository, because their licences do not allow redistribution. To use them, download them from the URL in the CSV into `docs/`; this folder ignores them by default (`.gitignore`).
 
 ## How it is used
-1. Documents are split into passages and indexed in PostgreSQL with pgvector (owner: Salma).
-2. When a farmer asks a question, the assistant retrieves the best passages and returns the answer with the source label (title and page).
-3. If nothing relevant is found, the assistant says so and the case can be sent to an expert.
+1. The approved PDFs are split into page-aware passages and stored in `chunks.json`.
+2. `retrieve.py` ranks passages with BM25 (local keyword retrieval; no vector database is used).
+3. The farm-aware irrigation endpoint calls this retriever and includes up to three relevant excerpts in the Groq/Ollama prompt. The response exposes the exact document title, year and page in `knowledge_sources` and labels the retrieval source as `agronomy_rag`.
+4. If nothing relevant is found, no knowledge-base citation is returned. Task 32 can still use the farm profile, live sensor readings and weather; Task 34 safety checks run first and bypass retrieval/LLM on refused requests.
 
 ## Licences
 - Most sources are CC BY 4.0 or CC BY-NC-SA 3.0 IGO. They are used here for a non-commercial prototype.
