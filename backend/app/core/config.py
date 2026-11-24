@@ -47,5 +47,13 @@ class Settings(BaseSettings):
     seed_on_start: bool = True
     simulate_sensors: bool = True  # auto-generate simulated data when no device
 
+    # RAG
+    rag_embedder: str = "hash"  # hash | openai
+    rag_openai_model: str = "text-embedding-3-small"
+
+    # Ollama (local LLM)
+    ollama_base_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "qwen3:4b"
+    ollama_timeout_seconds: int = 120
 
 settings = Settings()

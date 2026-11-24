@@ -13,6 +13,7 @@ import json
 import uuid
 
 from app.core.config import settings
+from app.services import safety
 
 
 # High-risk topics always escalate to an expert regardless of confidence
@@ -125,6 +126,18 @@ class StubAssistantService(AssistantInterface):
     ) -> AssistantResult:
         message_lower = message.lower()
 
+        # Task 34: safety rules run FIRST. A refused question (pesticide dose, poisoning,
+        # unclear text, ...) never reaches the knowledge base, and always creates an expert case.
+        verdict = safety.evaluate_message(message)
+        if verdict.refuse:
+            case_id = await self._create_expert_case(
+                message=message, answer=verdict.reply, confidence=0.0, sources=[],
+                farm=farm, user=user, db=db,
+            )
+            return AssistantResult(
+                answer=verdict.reply, confidence=0.0, sources=[], escalated=True, case_id=case_id,
+            )
+
         # Check for high-risk topics first
         is_high_risk = any(kw.lower() in message_lower for kw in HIGH_RISK_TOPICS)
 
@@ -153,7 +166,7 @@ class StubAssistantService(AssistantInterface):
             sources = []
 
         # Apply escalation rule
-        should_escalate = confidence < 0.6 or is_high_risk
+        should_escalate = confidence < 0.6 or is_high_risk or verdict.escalate
         case_id = None
 
         if should_escalate:
@@ -166,7 +179,9 @@ class StubAssistantService(AssistantInterface):
                 user=user,
                 db=db,
             )
-            answer = answer + "\n\n⚠️ تم إرسال حالتك لمراجعة خبير زراعي متخصص."
+
+        # Mandatory expert wording on every answer, in the language of the question.
+        answer = safety.finalize_answer(answer, should_escalate, verdict.language)
 
         return AssistantResult(
             answer=answer,
