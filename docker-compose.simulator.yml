@@ -1,0 +1,18 @@
+services:
+  simulator:
+    build:
+      context: ./docker/simulator
+    restart: unless-stopped
+    environment:
+      SIMULATOR_BASE_URL: http://backend:8000
+      SIMULATOR_DEVICE_ID: ${SIMULATOR_DEVICE_ID:?Set SIMULATOR_DEVICE_ID in the root .env file}
+      SIMULATOR_DEVICE_KEY: ${SIMULATOR_DEVICE_KEY:?Set SIMULATOR_DEVICE_KEY in the root .env file}
+      SIMULATOR_INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-5}
+    volumes:
+      - type: bind
+        source: ${SIMULATOR_SCRIPT_PATH:-./firmware/simulator.py}
+        target: /opt/aethera/simulator.py
+        read_only: true
+    depends_on:
+      backend:
+        condition: service_healthy
