@@ -1,0 +1,80 @@
+"""Pydantic schemas for assistant endpoints."""
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from datetime import datetime
+from uuid import UUID
+
+
+class ChatRequest(BaseModel):
+    message: str
+    farm_id: str
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    confidence: float
+    sources: List[str]
+    escalated: bool
+    case_id: Optional[UUID] = None
+
+
+class VoiceResponse(BaseModel):
+    transcript: str
+    answer: str
+    confidence: float
+    escalated: bool
+    case_id: Optional[UUID] = None
+
+
+class VoiceTranscriptionResponse(BaseModel):
+    transcript: str
+    requires_confirmation: bool = True
+
+
+class VoiceAnswerRequest(BaseModel):
+    farm_id: str
+    transcript: str = Field(..., min_length=1, max_length=500)
+    confirmed: bool = False
+
+
+class AdviceLogResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: UUID
+    user_id: UUID
+    farm_id: Optional[UUID] = None
+    question: str
+    answer: str
+    confidence: float
+    escalated: bool
+    channel: str
+    created_at: datetime
+
+
+class AdviceLogListResponse(BaseModel):
+    items: List[AdviceLogResponse]
+    total: int
+
+
+class IrrigationAdviceResponse(BaseModel):
+    """Structured, traceable irrigation advice for a farm."""
+    farm_id: UUID
+    action: str
+    action_label: str
+    explanation: str
+    recommended_steps: List[str]
+    confidence: float
+    confidence_level: str
+    confidence_reasons: List[str]
+    source_labels: List[str]
+    knowledge_sources: List[str] = Field(default_factory=list)
+    source_label: str
+    sensor_data: dict
+    weather: Optional[dict] = None
+    expert_review_required: bool
+    expert_case_id: Optional[UUID] = None
+    generated_at: datetime
+
+
+class IrrigationAdviceRequest(BaseModel):
+    message: Optional[str] = Field(default="Should I irrigate this farm now?", max_length=500)

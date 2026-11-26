@@ -1,0 +1,70 @@
+{
+  "manifest_check": {
+    "manifest": "ok",
+    "mismatches": []
+  },
+  "train_source_mix": {
+    "pepper__bacterial_spot": {
+      "plantdoc": 46,
+      "plantvillage": 400
+    },
+    "pepper__healthy": {
+      "plantdoc": 42,
+      "plantvillage": 400
+    },
+    "potato__early_blight": {
+      "plantdoc": 76,
+      "plantvillage": 400
+    },
+    "potato__healthy": {
+      "plantvillage": 152
+    },
+    "potato__late_blight": {
+      "plantdoc": 70,
+      "plantvillage": 400
+    },
+    "tomato__bacterial_spot": {
+      "plantdoc": 77,
+      "plantvillage": 400
+    },
+    "tomato__early_blight": {
+      "plantdoc": 53,
+      "plantvillage": 400
+    },
+    "tomato__healthy": {
+      "plantdoc": 44,
+      "plantvillage": 400
+    },
+    "tomato__late_blight": {
+      "plantdoc": 72,
+      "plantvillage": 400
+    },
+    "tomato__leaf_mold": {
+      "plantdoc": 67,
+      "plantvillage": 400
+    },
+    "tomato__mosaic_virus": {
+      "plantdoc": 34,
+      "plantvillage": 373
+    },
+    "tomato__septoria_leaf_spot": {
+      "plantdoc": 102,
+      "plantvillage": 400
+    },
+    "tomato__spider_mites": {
+      "plantdoc": 2,
+      "plantvillage": 400
+    },
+    "tomato__target_spot": {
+      "plantvillage": 400
+    },
+    "tomato__yellow_leaf_curl_virus": {
+      "plantdoc": 53,
+      "plantvillage": 400
+    }
+  },
+  "exact_cross_split": [],
+  "exact_cross_label": [],
+  "near_duplicates_val_test_vs_train": [],
+  "contact_sheets": []
+}

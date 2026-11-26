@@ -14,10 +14,13 @@ from app.models.social import (
     SocialMessage,
 )
 from app.models.diagnosis import DiagnosisCase
+from app.models.reading import Reading
+from app.models.advice_log import AdviceLog
+from app.models.expert_case import ExpertCase, ExpertReview
 __all__ = [
     "Base", "User", "RefreshSession", "AuthIdentity",
     "PendingVerification", "Farm", "Crop", "Device",
     "SensorReading", "FarmAlert", "UserProfile", "SocialPost",
     "Connection", "Conversation", "SocialMessage",
-    "DiagnosisCase",
+    "DiagnosisCase", "Reading", "AdviceLog", "ExpertCase", "ExpertReview",
 ]

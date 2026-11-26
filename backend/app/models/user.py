@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from app.models.base import Base
 
@@ -22,6 +22,11 @@ class User(Base):
         String(150),
         nullable=False,
     )
+
+    # Names used by origin/main's assistant and expert APIs.
+    name = synonym("full_name")
+    hashed_password = synonym("password_hash")
+    phone = synonym("phone_number")
 
     email: Mapped[str | None] = mapped_column(
         String(255),
@@ -85,6 +90,8 @@ class User(Base):
         default="en",
         nullable=False,
     )
+
+    region: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

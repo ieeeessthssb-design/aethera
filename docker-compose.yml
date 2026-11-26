@@ -17,12 +17,13 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
       APP_NAME: ${APP_NAME:-AETHERA API}
       APP_ENV: ${APP_ENV:-development}
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-aethera}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-aethera}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aethera}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-aethera}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in root .env}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       JWT_ISSUER: ${JWT_ISSUER:-aethera-api}
@@ -38,6 +39,20 @@ services:
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:4200,http://localhost:8080}
+      ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-stub}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
+      GROQ_BASE_URL: ${GROQ_BASE_URL:-https://api.groq.com/openai/v1}
+      STT_PROVIDER: ${STT_PROVIDER:-stub}
+      RAG_EMBEDDER: ${RAG_EMBEDDER:-hash}
+      RAG_OPENAI_MODEL: ${RAG_OPENAI_MODEL:-text-embedding-3-small}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      SEED_ON_START: ${SEED_ON_START:-false}
+      SIMULATE_SENSORS: ${SIMULATE_SENSORS:-true}
       DEMO_ACCOUNT_ENABLED: ${DEMO_ACCOUNT_ENABLED:-true}
       DEMO_ACCOUNT_EMAIL: ${DEMO_ACCOUNT_EMAIL:-demo@example.com}
       DEMO_ACCOUNT_PASSWORD: ${DEMO_ACCOUNT_PASSWORD:-AetheraDemo!2026}

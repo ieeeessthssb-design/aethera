@@ -5,7 +5,10 @@
 **/.env
 **/.env.*
 !**/.env.example
+/env
+/backend/env
 **/*service-account*.json
+*.key
 
 # Python
 __pycache__/
@@ -22,8 +25,9 @@ backend/uploads/*
 !backend/uploads/**/.gitkeep
 *.dump
 *.sql.gz
+*.db
 
-# Flutter / Dart
+# Flutter / Dart / Node
 **/.dart_tool/
 **/build/
 **/.flutter-plugins
@@ -31,6 +35,7 @@ backend/uploads/*
 **/.packages
 **/.pub-cache/
 **/ephemeral/
+node_modules/
 
 # Android / Gradle local state
 **/.gradle/
@@ -48,12 +53,25 @@ backend/uploads/*
 **/windows/flutter/generated_plugin_registrant.cc
 **/windows/flutter/generated_plugins.cmake
 
-# IDE / OS
+# Local AI data, models and generated reports
+ai/retrieval/chroma_db/
+ai/retrieval/docs/*
+!ai/retrieval/docs/.gitkeep
+ai/stt/audio/
+data/
+models/
+backup_models/
+final_probe_convnext/
+reports/debug/
+reports/**/*.jpg
+*.zip
+tree_data.txt
+
+# IDE / OS / logs
 .idea/
 .vscode/
 *.iml
 .DS_Store
 Thumbs.db
-
-# Logs
 *.log
+ai/stt/FarukSTT_experiments_A_B.csv

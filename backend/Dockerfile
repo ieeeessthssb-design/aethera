@@ -10,10 +10,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./requirements.txt
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY . ./backend
+COPY backend/ ./backend
+RUN mkdir -p ./ai/retrieval
+COPY ai/retrieval/retrieve.py ./ai/retrieval/retrieve.py
+COPY ai/retrieval/chunks.json ./ai/retrieval/chunks.json
 WORKDIR /srv/aethera/backend
 RUN mkdir -p uploads/diagnoses
 

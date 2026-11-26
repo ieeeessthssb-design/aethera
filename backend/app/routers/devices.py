@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.device import Device, SensorReading, FarmAlert
+from app.models.reading import Reading
 from app.models.farm import Farm
 from app.models.user import User
 from app.schemas.device import (
@@ -29,6 +30,10 @@ from app.schemas.device import (
     SensorReadingCreate,
     SensorReadingPublic,
     FarmAlertPublic,
+    DeviceCreateRequest,
+    DeviceResponse,
+    DeviceReadingIngestionRequest,
+    DeviceReadingIngestionResponse,
 )
 
 router = APIRouter(tags=["IoT Devices"])
@@ -96,7 +101,7 @@ async def create_device(
 
 
 async def get_authenticated_device(
-    device_id: UUID,
+    device_id: str,
     db: DbSession,
     device_key: Annotated[str | None, Header(alias="X-Device-Key")] = None,
 ) -> Device:
@@ -106,9 +111,17 @@ async def get_authenticated_device(
             detail="Device key required.",
         )
 
+    try:
+        parsed_device_id = UUID(device_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid device credentials.",
+        ) from None
+
     device = await db.scalar(
         select(Device).where(
-            Device.id == device_id,
+            Device.id == parsed_device_id,
             Device.key_hash == hash_device_key(device_key),
             Device.is_active.is_(True),
         )
@@ -129,13 +142,42 @@ AuthenticatedDevice = Annotated[
 ]
 
 
+@router.get("/devices", response_model=list[DeviceResponse])
+async def list_devices_compat(db: DbSession, current_user: CurrentUser):
+    """Main dashboard compatibility route; results remain scoped to owned farms."""
+    farm_ids = select(Farm.id).where(Farm.owner_id == current_user.id)
+    result = await db.scalars(select(Device).where(Device.farm_id.in_(farm_ids)))
+    return list(result.all())
+
+
+@router.post("/devices", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
+async def create_device_compat(payload: DeviceCreateRequest, db: DbSession, current_user: CurrentUser):
+    """Register through the main dashboard while returning the key only once."""
+    if current_user.role != "farmer":
+        raise HTTPException(status_code=403, detail="Only farmers can register devices.")
+    farm = await db.scalar(
+        select(Farm).where(Farm.id == payload.farm_id, Farm.owner_id == current_user.id)
+    )
+    if farm is None:
+        raise HTTPException(status_code=404, detail="Farm not found.")
+    device_key = secrets.token_urlsafe(32)
+    device = Device(farm_id=farm.id, name=payload.name, key_hash=hash_device_key(device_key))
+    db.add(device)
+    await db.commit()
+    await db.refresh(device)
+    return DeviceResponse(
+        id=device.id, farm_id=device.farm_id, name=device.name, device_key=device_key,
+        is_active=device.is_active, last_seen_at=device.last_seen_at, created_at=device.created_at,
+    )
+
+
 @router.post(
     "/devices/{device_id}/readings",
-    response_model=SensorReadingPublic,
+    response_model=DeviceReadingIngestionResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def receive_sensor_reading(
-    payload: SensorReadingCreate,
+    payload: DeviceReadingIngestionRequest,
     db: DbSession,
     device: AuthenticatedDevice,
     simulated: Annotated[
@@ -143,20 +185,50 @@ async def receive_sensor_reading(
         Header(alias="X-Simulated"),
     ] = False,
 ):
-    reading = SensorReading(
-        device_id=device.id,
-        soil_moisture=payload.soil_moisture,
-        temperature=payload.temperature,
-        humidity=payload.humidity,
-        recorded_at=payload.recorded_at,
-        is_simulated=simulated,
+    recorded_at = payload.recorded_at or datetime.now(timezone.utc)
+    values = {
+        "soil_moisture": payload.soil_moisture,
+        "temperature": payload.temperature,
+        "humidity": payload.humidity,
+    }
+    values = {metric: value for metric, value in values.items() if value is not None}
+    source = "simulated" if simulated or payload.source == "simulated" else "real"
+    existing = await db.scalars(
+        select(Reading.metric).where(
+            Reading.device_id == device.id,
+            Reading.recorded_at == recorded_at,
+            Reading.metric.in_(list(values)),
+        )
     )
-
-    db.add(reading)
+    already_stored = set(existing.all())
+    new_readings = [
+        Reading(device_id=device.id, farm_id=device.farm_id, metric=metric,
+                value=value, recorded_at=recorded_at, source=source)
+        for metric, value in values.items() if metric not in already_stored
+    ]
+    db.add_all(new_readings)
+    wide_reading = None
+    if len(values) == 3:
+        wide_reading = await db.scalar(
+            select(SensorReading).where(
+                SensorReading.device_id == device.id,
+                SensorReading.recorded_at == recorded_at,
+            ).limit(1)
+        )
+    if len(values) == 3 and wide_reading is None:
+        wide_reading = SensorReading(
+            device_id=device.id,
+            soil_moisture=values["soil_moisture"],
+            temperature=values["temperature"],
+            humidity=values["humidity"],
+            recorded_at=recorded_at,
+            is_simulated=(source == "simulated"),
+        )
+        db.add(wide_reading)
     # Every authenticated packet proves transport connectivity, including simulator
     # packets. Simulated packets update freshness but do not create field alerts.
     device.last_seen_at = datetime.now(timezone.utc)
-    if not simulated:
+    if source == "real" and len(values) == 3:
         # Deterministic agronomic thresholds only; this does not invoke AI/diagnosis.
         alert_specs = []
         if payload.soil_moisture < 20:
@@ -195,9 +267,17 @@ async def receive_sensor_reading(
                 ))
     
     await db.commit()
-    await db.refresh(reading)
-
-    return reading
+    if wide_reading is not None:
+        await db.refresh(wide_reading)
+    return DeviceReadingIngestionResponse(
+        inserted=len(new_readings), skipped=len(values) - len(new_readings),
+        recorded_at=recorded_at, device_id=device.id,
+        id=wide_reading.id if wide_reading else None,
+        reading_id=wide_reading.id if wide_reading else None,
+        soil_moisture=values.get("soil_moisture"), temperature=values.get("temperature"),
+        humidity=values.get("humidity"), is_simulated=(source == "simulated"),
+        received_at=(wide_reading.received_at if wide_reading else datetime.now(timezone.utc)),
+    )
 @router.get(
     "/farms/{farm_id}/devices/{device_id}/readings/latest",
     response_model=SensorReadingPublic | None,

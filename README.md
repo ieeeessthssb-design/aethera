@@ -4,10 +4,11 @@ AETHERA connects farmers, agricultural experts, farm records, weather informatio
 
 ## Development architecture
 
-- `app/` — Flutter application, run locally from VS Code using the Flutter SDK installed on Windows.
+- `app/` — local AETHERA Flutter application, run from VS Code using the Flutter SDK installed on Windows.
+- `frontend/aethera_flutter/` — the upstream main Flutter experience; it is retained alongside the local app.
 - `backend/` — FastAPI API, run in Docker.
 - PostgreSQL — run in Docker with a persistent volume.
-- `firmware/` — IoT workspace; firmware implementation is not modified by this setup.
+- `firmware/` — IoT workspace and configurable sensor simulator.
 
 **The Flutter frontend is intentionally not built inside Docker during development.** This avoids downloading and configuring a large Flutter SDK inside every Docker build and enables Flutter hot reload/debugging in VS Code.
 
@@ -154,12 +155,25 @@ Forecast responses are cached in-process for 10 minutes. Agricultural notes are 
 
 ## Scope and verification
 
-- This repository snapshot does not contain an AI model or inference implementation. The animated assistant orb is a frontend interaction element and does not claim to generate AI answers.
-- The firmware workspace has not been changed by this Docker/Flutter workflow update.
+- No AI model weights are bundled. Assistant, safety, retrieval, irrigation, expert review, and voice demo code are included; provider-backed generation requires its optional configuration.
+- The main voice pipeline is available at `ai/voice/voice_pipeline.py`; its recorded response clips are demo assets.
 - Run `flutter pub get`, `flutter analyze`, and the backend tests locally before deployment. These commands have not been executed as part of packaging this archive.
 - Review Firebase restrictions, CORS origins and production secrets before public deployment.
 
 See `docs/PROJECT_STRUCTURE.md` and `DESIGN_SYSTEM.md` for project documentation and visual rules.
+
+## Repository map and team workflow
+
+| Area | Purpose |
+|---|---|
+| `backend/` | FastAPI API, authentication, database, assistant, farm and device endpoints |
+| `app/` | Local integrated Flutter client |
+| `frontend/aethera_flutter/` | Upstream Flutter client and screens |
+| `firmware/` | ESP32 workspace and sensor simulator |
+| `ai/assistant/`, `ai/retrieval/`, `ai/stt/`, `ai/vision/`, `ai/voice/` | Assistant safety, verified retrieval, speech and vision work, and voice demo |
+| `docs/` | Architecture and project documentation |
+
+Work on a feature branch and open a pull request. Do not push directly to `main`. Keep API keys, passwords, personal audio and other private data out of Git. Label simulated or manually entered data clearly.
 
 ## Local demo account
 

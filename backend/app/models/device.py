@@ -1,5 +1,7 @@
 
 import uuid
+import hashlib
+import secrets
 from datetime import datetime
 
 from sqlalchemy import (
@@ -11,6 +13,7 @@ from sqlalchemy import (
     String,
     func,
 )
+from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -149,3 +152,17 @@ class FarmAlert(Base):
     acknowledged_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True,
     )
+
+
+@event.listens_for(Device, "before_insert")
+def issue_key_for_main_device_creation(mapper, connection, target: Device) -> None:
+    """Keep main's create-without-key model API while only persisting a hash.
+
+    The raw key is attached transiently to the just-created instance so callers
+    can return it once. It is never mapped to a database column or available on
+    subsequently loaded devices.
+    """
+    if not target.key_hash:
+        device_key = secrets.token_urlsafe(32)
+        target.key_hash = hashlib.sha256(device_key.encode("utf-8")).hexdigest()
+        target.device_key = device_key

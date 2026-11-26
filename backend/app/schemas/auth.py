@@ -2,12 +2,15 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 
 # Shared registration validation
 class RegistrationBase(BaseModel):
-    full_name: str = Field(min_length=2, max_length=150)
+    full_name: str = Field(
+        min_length=2, max_length=150,
+        validation_alias=AliasChoices("full_name", "name"),
+    )
     password: str = Field(min_length=12, max_length=128)
     preferred_language: str = Field(
         default="en",
@@ -74,8 +77,11 @@ class UserPublic(BaseModel):
 
     id: UUID
     full_name: str
+    name: str | None = None
     email: EmailStr | None = None
     phone_number: str | None = None
+    phone: str | None = None
+    region: str | None = None
     preferred_language: str
     is_verified: bool
     role: str
@@ -89,6 +95,12 @@ class AuthResponse(BaseModel):
     expires_in: int
     refresh_token: str | None = None
     user: UserPublic
+
+    @computed_field
+    @property
+    def token(self) -> str:
+        """Alias retained for clients from origin/main; access_token stays canonical."""
+        return self.access_token
 
 
 class EmailResendRequest(BaseModel):
