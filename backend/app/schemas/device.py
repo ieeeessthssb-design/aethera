@@ -1,61 +1,124 @@
-"""Pydantic schemas for device management endpoints."""
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Literal, Optional
+
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-class DeviceCreateRequest(BaseModel):
-    farm_id: str
-    name: str
+class DeviceCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    is_simulated: bool = False
 
 
-class DeviceResponse(BaseModel):
-    model_config = {"from_attributes": True}
-
-    id: str
-    farm_id: str
+class DeviceCreated(BaseModel):
+    id: UUID
+    farm_id: UUID
     name: str
     device_key: str
     is_active: bool
-    last_seen_at: Optional[datetime] = None
+    is_simulated: bool = False
+    created_at: datetime
+
+
+class DevicePublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    farm_id: UUID
+    name: str
+    is_active: bool
+    is_simulated: bool = False
+    created_at: datetime
+    last_seen_at: datetime | None = None
+    connection_status: str = "unknown"
+
+
+class SensorReadingCreate(BaseModel):
+    soil_moisture: float = Field(ge=0, le=100)
+    temperature: float = Field(ge=-50, le=100)
+    humidity: float = Field(ge=0, le=100)
+    recorded_at: datetime
+
+
+class SensorReadingPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    device_id: UUID
+    soil_moisture: float
+    temperature: float
+    humidity: float
+    recorded_at: datetime
+    is_simulated: bool
+    received_at: datetime
+
+
+class FarmAlertPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    farm_id: UUID
+    device_id: UUID | None
+    alert_type: str
+    severity: str
+    title: str
+    detail: str
+    source: str
+    created_at: datetime
+    acknowledged_at: datetime | None
+
+
+class DeviceCreateRequest(BaseModel):
+    farm_id: UUID
+    name: str = Field(min_length=2, max_length=100)
+
+
+class DeviceResponse(BaseModel):
+    id: UUID
+    farm_id: UUID
+    name: str
+    device_key: str | None = None
+    is_active: bool
+    last_seen_at: datetime | None = None
     created_at: datetime
 
 
 class DeviceReadingIngestionRequest(BaseModel):
-    """Payload sent by the ESP32 (or the simulator script).
-
-    Each metric is optional: if a sensor fails (e.g. the DHT22), the device sends
-    ``null`` for that metric and the others are still stored. At least one metric
-    is required. ``recorded_at`` defaults to server time when the ESP32 has no clock.
-    """
-
-    soil_moisture: Optional[float] = Field(None, ge=0, le=100, description="Soil moisture, %")
-    temperature: Optional[float] = Field(None, ge=-40, le=80, description="Air temperature, °C")
-    humidity: Optional[float] = Field(None, ge=0, le=100, description="Air humidity, %")
-    recorded_at: Optional[datetime] = None
-    # The simulator script must label its data; real devices omit this field.
+    soil_moisture: float | None = Field(default=None, ge=0, le=100)
+    temperature: float | None = Field(default=None, ge=-40, le=80)
+    humidity: float | None = Field(default=None, ge=0, le=100)
+    recorded_at: datetime | None = None
     source: Literal["real", "simulated"] = "real"
 
     @field_validator("recorded_at")
     @classmethod
-    def _utc_and_not_future(cls, v: Optional[datetime]) -> Optional[datetime]:
-        if v is None:
-            return v
-        if v.tzinfo is None:  # ESP32 firmware often omits the timezone suffix
-            v = v.replace(tzinfo=timezone.utc)
-        v = v.astimezone(timezone.utc)
-        if v > datetime.now(timezone.utc) + timedelta(minutes=5):
-            raise ValueError("recorded_at is in the future (check the device clock)")
-        return v
+    def normalize_recorded_at(cls, value):
+        if value is None:
+            return value
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        value = value.astimezone(timezone.utc)
+        if value > datetime.now(timezone.utc) + timedelta(minutes=5):
+            raise ValueError("recorded_at cannot be more than five minutes in the future")
+        return value
 
     @model_validator(mode="after")
-    def _at_least_one_metric(self):
-        if self.soil_moisture is None and self.temperature is None and self.humidity is None:
-            raise ValueError("at least one of soil_moisture, temperature, humidity is required")
+    def at_least_one_metric(self):
+        if all(getattr(self, metric) is None for metric in ("soil_moisture", "temperature", "humidity")):
+            raise ValueError("at least one sensor metric is required")
         return self
 
 
 class DeviceReadingIngestionResponse(BaseModel):
     inserted: int
+    skipped: int = 0
     recorded_at: datetime
-    skipped: int = 0  # duplicates (same device, metric and timestamp) from retries
+    id: UUID | None = None
+    device_id: UUID
+    reading_id: UUID | None = None
+    soil_moisture: float | None = None
+    temperature: float | None = None
+    humidity: float | None = None
+    is_simulated: bool
+    received_at: datetime

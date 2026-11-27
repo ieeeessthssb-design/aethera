@@ -1,0 +1,11 @@
+AETHERA simulator Docker overlay
+
+1) Copy docker-compose.simulator.yml to the project root.
+2) Copy the docker/ directory into the project root.
+3) Add variables from .env.simulator.example to the root .env and set a test device UUID/key.
+4) Set SIMULATOR_SCRIPT_PATH to the actual local simulator file. The supplied archive has firmware/simulator.py; the user's path says firmware/similator.py, so verify the spelling.
+5) Apply patches/backend_simulated_last_seen.patch to the backend so simulated packets update last_seen_at while still suppressing real alerts.
+6) Optional: apply patches/irrigation_screen_polling.patch for 10-second automatic UI refresh while the Irrigation screen is open.
+7) Run: docker compose -f docker-compose.yml -f docker-compose.simulator.yml up -d --build
+
+Do not run docker compose down -v.

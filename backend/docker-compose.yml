@@ -1,17 +1,29 @@
+
 services:
   db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_USER: aethera, POSTGRES_PASSWORD: aethera_pass, POSTGRES_DB: aethera_db }
-    volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U aethera -d aethera_db"], interval: 3s, retries: 10 }
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: aethera
+      POSTGRES_PASSWORD: aethera_pass
+      POSTGRES_DB: aethera_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aethera -d aethera_db"]
+      interval: 3s
+      retries: 10
+
   api:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-    env_file: .env
+    env_file:
+      - ../.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://aethera:aethera_pass@db:5432/aethera_db
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@aethera-primary-db:5432/${POSTGRES_DB}
       CORS_ORIGINS: "*"
-    depends_on: { db: { condition: service_healthy } }
-    ports: ["8000:8000"]
-volumes: { pgdata: {} }
+    ports:
+      - "8001:8000"
+
+volumes:
+  pgdata:

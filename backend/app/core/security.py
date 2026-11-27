@@ -1,37 +1,42 @@
-"""JWT creation/verification and password hashing."""
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from app.core.config import settings
+from pwdlib import PasswordHash
+import bcrypt
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+password_hasher = PasswordHash.recommended()
 
 
 def hash_password(password: str) -> str:
-    """Hash a plain-text password using bcrypt."""
-    return pwd_context.hash(password)
+    """Hash new passwords with bcrypt; retain Argon2 for long inputs and old hashes."""
+    encoded = password.encode("utf-8")
+    if len(encoded) > 72:
+        return password_hasher.hash(password)
+    return bcrypt.hashpw(encoded, bcrypt.gensalt()).decode("ascii")
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain-text password against a bcrypt hash."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def create_access_token(data: Dict[str, Any]) -> str:
-    """Create a JWT access token with an expiry of jwt_expire_days."""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_expire_days)
-    to_encode["exp"] = expire
-    return jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-
-
-def decode_token(token: str) -> Optional[Dict[str, Any]]:
-    """Decode a JWT token. Returns None if invalid or expired."""
+def verify_password(password: str, hashed_password: str) -> bool:
+    """Verify a password against its stored hash."""
+    if hashed_password.startswith(("$2a$", "$2b$", "$2y$")):
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("ascii"))
+        except (ValueError, TypeError):
+            return False
     try:
-        payload = jwt.decode(
-            token, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
-        )
-        return payload
-    except JWTError:
+        return password_hasher.verify(password, hashed_password)
+    except Exception:
+        return False
+
+
+def create_access_token(data: dict) -> str:
+    """Compatibility helper for imported assistant routes; preserve local JWT claims."""
+    from app.core.tokens import create_access_token as create_local_token
+    claims = {key: value for key, value in data.items() if key != "sub"}
+    return create_local_token(str(data.get("sub", "")), claims)
+
+
+def decode_token(token: str):
+    """Compatibility helper that uses the local issuer, audience and token-type checks."""
+    from jwt import InvalidTokenError
+    from app.core.tokens import decode_access_token
+    try:
+        return decode_access_token(token)
+    except InvalidTokenError:
         return None

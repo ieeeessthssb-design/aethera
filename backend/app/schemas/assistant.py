@@ -2,6 +2,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from uuid import UUID
 
 
 class ChatRequest(BaseModel):
@@ -14,7 +15,7 @@ class ChatResponse(BaseModel):
     confidence: float
     sources: List[str]
     escalated: bool
-    case_id: Optional[str] = None
+    case_id: Optional[UUID] = None
 
 
 class VoiceResponse(BaseModel):
@@ -22,7 +23,7 @@ class VoiceResponse(BaseModel):
     answer: str
     confidence: float
     escalated: bool
-    case_id: Optional[str] = None
+    case_id: Optional[UUID] = None
 
 
 class VoiceTranscriptionResponse(BaseModel):
@@ -39,9 +40,9 @@ class VoiceAnswerRequest(BaseModel):
 class AdviceLogResponse(BaseModel):
     model_config = {"from_attributes": True}
 
-    id: str
-    user_id: str
-    farm_id: Optional[str] = None
+    id: UUID
+    user_id: UUID
+    farm_id: Optional[UUID] = None
     question: str
     answer: str
     confidence: float
@@ -57,7 +58,7 @@ class AdviceLogListResponse(BaseModel):
 
 class IrrigationAdviceResponse(BaseModel):
     """Structured, traceable irrigation advice for a farm."""
-    farm_id: str
+    farm_id: UUID
     action: str
     action_label: str
     explanation: str
@@ -71,7 +72,7 @@ class IrrigationAdviceResponse(BaseModel):
     sensor_data: dict
     weather: Optional[dict] = None
     expert_review_required: bool
-    expert_case_id: Optional[str] = None
+    expert_case_id: Optional[UUID] = None
     generated_at: datetime
 
 

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional
+from uuid import UUID
 from app.core.dependencies import get_db, require_expert
 from app.models.expert_case import ExpertCase, ExpertReview
 from app.models.user import User
@@ -48,7 +49,7 @@ async def list_cases(
 
 @router.get("/cases/{id}", response_model=ExpertCaseDetail)
 async def get_case(
-    id: str,
+    id: UUID,
     current_user: User = Depends(require_expert),
     db: AsyncSession = Depends(get_db),
 ):
@@ -68,7 +69,7 @@ async def get_case(
 
 @router.post("/cases/{id}/review", response_model=ExpertCaseDetail)
 async def review_case(
-    id: str,
+    id: UUID,
     request: ExpertReviewRequest,
     current_user: User = Depends(require_expert),
     db: AsyncSession = Depends(get_db),

@@ -1,26 +1,35 @@
-"""Async SQLAlchemy engine and session factory."""
+
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
-    create_async_engine,
     async_sessionmaker,
+    create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
+
 from app.core.config import settings
+from app.core.base import Base
 
-# Create async engine
-_kw = {} if settings.async_database_url.startswith("sqlite") else {"pool_size": 10, "max_overflow": 20}
-engine = create_async_engine(settings.async_database_url, echo=False, pool_pre_ping=True, **_kw)
+_engine_options = {"pool_pre_ping": True, "echo": False}
+if settings.async_database_url.startswith("sqlite"):
+    _engine_options["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_options.update(pool_size=10, max_overflow=20)
+engine = create_async_engine(settings.async_database_url, **_engine_options)
 
-# Session factory
 AsyncSessionLocal = async_sessionmaker(
-    engine,
+    bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    autocommit=False,
     autoflush=False,
+    autocommit=False,
 )
 
 
-class Base(DeclarativeBase):
-    """Base class for all ORM models."""
-    pass
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        yield session
+
+
+async def close_database() -> None:
+    await engine.dispose()

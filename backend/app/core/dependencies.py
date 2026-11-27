@@ -1,82 +1,74 @@
-"""FastAPI dependency injection: DB session, current user, role guard."""
-from typing import AsyncGenerator, Optional
-from fastapi import Depends, HTTPException, Header, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+
+import hashlib
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import InvalidTokenError
 from sqlalchemy import select
-from app.core.database import AsyncSessionLocal
-from app.core.security import decode_token
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.core.tokens import decode_access_token
 from app.models.user import User
 from app.models.device import Device
 
-security = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
-
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Yield an async database session, closing it after use."""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db),
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(bearer_scheme),
+    ],
+    db: DbSession,
 ) -> User:
-    """Extract and validate the current user from the JWT token."""
-    token = credentials.credentials
-    payload = decode_token(token)
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise unauthorized
+
+    try:
+        claims = decode_access_token(credentials.credentials)
+
+        if claims.get("type") != "access":
+            raise unauthorized
+
+        user = await db.scalar(
+            select(User).where(User.id == UUID(claims["sub"]))
         )
-    user_id: Optional[str] = payload.get("sub")
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
-        )
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
+    except (InvalidTokenError, ValueError, TypeError, KeyError):
+        raise unauthorized from None
+
+    if user is None or not user.is_active:
+        raise unauthorized
+
     return user
 
 
-async def require_expert(
-    current_user: User = Depends(get_current_user),
-) -> User:
-    """Require the current user to have the 'expert' role."""
+async def require_expert(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "expert":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Expert role required",
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Expert role required")
+    if current_user.expert_approval_status not in ("approved", "not_applicable"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Expert account is not approved")
     return current_user
 
+
 async def get_device_from_key(
-    x_device_key: Optional[str] = Header(None),
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    x_device_key: Annotated[str | None, Header(alias="X-Device-Key")] = None,
 ) -> Device:
-    """Authenticate an ESP32 device via X-Device-Key header."""
     if not x_device_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing X-Device-Key header",
-        )
-    result = await db.execute(
-        select(Device).where(Device.device_key == x_device_key, Device.is_active == True)
-    )
-    device = result.scalar_one_or_none()
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing X-Device-Key header")
+    digest = hashlib.sha256(x_device_key.encode("utf-8")).hexdigest()
+    device = await db.scalar(select(Device).where(Device.key_hash == digest, Device.is_active.is_(True)))
     if device is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or inactive device key",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or inactive device key")
     return device

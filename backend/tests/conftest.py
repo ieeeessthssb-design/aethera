@@ -9,7 +9,8 @@ os.environ["DATABASE_URL"] = os.environ.get(
     "TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db"
 )
 # The engine is disposed around every test so async connections never cross loops.
-os.environ.setdefault("JWT_SECRET", "test-secret-do-not-use-in-production")
+os.environ.setdefault("JWT_SECRET_KEY", "pytest-only-secret-not-for-deployment")
+os.environ.setdefault("EMAIL_OTP_PEPPER", "pytest-only-pepper-not-for-deployment")
 os.environ.setdefault("SIMULATE_SENSORS", "true")
 
 

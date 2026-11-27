@@ -1,6 +1,7 @@
 """Expert Case and Expert Review ORM models."""
 import uuid
 from datetime import datetime, timezone
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import (
     String, Float, Boolean, DateTime, Enum as SAEnum, ForeignKey, Text, event
 )
@@ -11,14 +12,14 @@ from app.core.database import Base
 class ExpertCase(Base):
     __tablename__ = "expert_cases"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    farm_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("farms.id", ondelete="SET NULL"), nullable=True
+    farm_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("farms.id", ondelete="SET NULL"), nullable=True
     )
-    advice_log_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("advice_log.id", ondelete="SET NULL"), nullable=True
+    advice_log_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("advice_log.id", ondelete="SET NULL"), nullable=True
     )
     # Denormalized for display without joins
     farmer_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -43,14 +44,14 @@ class ExpertCase(Base):
 class ExpertReview(Base):
     __tablename__ = "expert_reviews"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    case_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("expert_cases.id", ondelete="CASCADE"), nullable=False, unique=True
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("expert_cases.id", ondelete="CASCADE"), nullable=False, unique=True
     )
-    expert_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    expert_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     expert_name: Mapped[str] = mapped_column(String(255), nullable=False)
     decision: Mapped[str] = mapped_column(

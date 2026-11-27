@@ -10,6 +10,7 @@ from app.models.advice_log import AdviceLog
 from app.models.expert_case import ExpertCase
 import json
 from datetime import datetime, timezone
+from uuid import UUID
 from app.schemas.assistant import (
     ChatRequest,
     ChatResponse,
@@ -28,8 +29,12 @@ from app.services.stt_service import get_stt_service
 router = APIRouter(tags=["assistant"])
 
 
-async def _get_farm_or_404(farm_id: str, db: AsyncSession) -> Farm:
-    result = await db.execute(select(Farm).where(Farm.id == farm_id))
+async def _get_farm_or_404(farm_id: str | UUID, db: AsyncSession) -> Farm:
+    try:
+        farm_uuid = UUID(str(farm_id))
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(status_code=404, detail="Farm not found") from None
+    result = await db.execute(select(Farm).where(Farm.id == farm_uuid))
     farm = result.scalar_one_or_none()
     if farm is None:
         raise HTTPException(status_code=404, detail="Farm not found")
@@ -37,7 +42,7 @@ async def _get_farm_or_404(farm_id: str, db: AsyncSession) -> Farm:
 
 
 async def _create_irrigation_advice(
-    farm_id: str, question: str, current_user: User, db: AsyncSession, channel: str
+    farm_id: UUID, question: str, current_user: User, db: AsyncSession, channel: str
 ) -> IrrigationAdviceResponse:
     farm = await _get_farm_or_404(farm_id, db)
     if farm.owner_id != current_user.id:
@@ -93,6 +98,8 @@ async def chat(
 ):
     """Send a text message to the AI assistant."""
     farm = await _get_farm_or_404(request.farm_id, db)
+    if farm.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this farm")
     assistant = get_assistant_service()
     result = await assistant.answer(
         message=request.message,
@@ -124,6 +131,8 @@ async def voice_chat(
 ):
     """Send a voice message to the AI assistant."""
     farm = await _get_farm_or_404(farm_id, db)
+    if farm.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this farm")
     # Transcribe audio
     stt = get_stt_service()
     audio_bytes = await audio.read()
@@ -167,7 +176,7 @@ async def voice_chat(
     tags=["irrigation"],
 )
 async def irrigation_advice(
-    farm_id: str,
+    farm_id: UUID,
     request: IrrigationAdviceRequest | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -186,8 +195,6 @@ async def voice_transcribe(
 ):
     """Transcribe audio and return it for farmer confirmation before answering."""
     farm = await _get_farm_or_404(farm_id, db)
-    if farm.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You do not own this farm")
     stt = get_stt_service()
     transcript = await stt.transcribe(await audio.read(), content_type=audio.content_type)
     return VoiceTranscriptionResponse(transcript=transcript)

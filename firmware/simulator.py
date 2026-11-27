@@ -11,6 +11,7 @@ WARNING: do not point this at the shared production database until the team
 has decided how simulated data is flagged. Otherwise fake readings look real.
 """
 import argparse
+import os
 import math
 import random
 import time
@@ -19,10 +20,10 @@ from datetime import datetime, timezone
 import requests
 
 # ---------------- SETTINGS: change these ----------------
-BASE_URL = "http://localhost:8000"   # production: https://aethera-backend.onrender.com
-DEVICE_ID = "00000000-0000-0000-0000-000000000000"   # UUID of a TEST device
-DEVICE_KEY = "***"               # shown only once when the device is created
-INTERVAL_SECONDS = 5
+BASE_URL = os.getenv("AETHERA_API_URL", "http://localhost:8000")
+DEVICE_ID = os.getenv("AETHERA_DEVICE_ID", "")
+DEVICE_KEY = os.getenv("AETHERA_DEVICE_KEY", "")
+INTERVAL_SECONDS = int(os.getenv("AETHERA_SIMULATOR_INTERVAL", "5"))
 
 # Extra header, NOT in the contract. The backend ignores it unless the team
 # decides to use it to flag simulated data. Confirm with the backend squad.
@@ -71,15 +72,25 @@ def send(reading):
 
 
 def main():
+    global BASE_URL, DEVICE_ID, DEVICE_KEY, INTERVAL_SECONDS
     parser = argparse.ArgumentParser(description="AETHERA sensor simulator")
     parser.add_argument("--once", action="store_true", help="send one reading and stop")
+    parser.add_argument("--base-url", default=BASE_URL)
+    parser.add_argument("--device-id", default=DEVICE_ID)
+    parser.add_argument("--device-key", default=DEVICE_KEY)
+    parser.add_argument("--interval", type=int, default=INTERVAL_SECONDS)
     args = parser.parse_args()
+    BASE_URL, DEVICE_ID, DEVICE_KEY, INTERVAL_SECONDS = args.base_url.rstrip("/"), args.device_id, args.device_key, args.interval
+    if not DEVICE_ID or not DEVICE_KEY:
+        parser.error("Provide --device-id and --device-key, or set AETHERA_DEVICE_ID and AETHERA_DEVICE_KEY.")
+    if INTERVAL_SECONDS < 1:
+        parser.error("--interval must be at least 1 second.")
 
     if args.once:
         send(next_reading())
         return
 
-    print(f"Sending a reading every {INTERVAL_SECONDS} s to {BASE_URL}. Ctrl+C to stop.")
+    print(f"Sending simulated readings every {INTERVAL_SECONDS} s to {BASE_URL} for device {DEVICE_ID}. Ctrl+C to stop.")
     while True:
         send(next_reading())
         time.sleep(INTERVAL_SECONDS)

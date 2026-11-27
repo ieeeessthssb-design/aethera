@@ -1,29 +1,80 @@
-﻿# secrets
+# Secrets and local environment files
 .env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+/env
+/backend/env
+**/*service-account*.json
+backend/secrets/*.json
 *.key
 
-# python
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
 
-# flutter / node build output
-build/
-.dart_tool/
+# Runtime uploads and local database exports
+backend/uploads/*
+!backend/uploads/**/
+!backend/uploads/**/.gitkeep
+*.dump
+*.sql.gz
+*.db
+
+# Flutter / Dart / Node
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/ephemeral/
 node_modules/
 
-# generated or private data
+# Android / Gradle local state
+**/.gradle/
+**/local.properties
+
+# Flutter-generated platform files
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugins.cmake
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugins.cmake
+
+# Local AI data, models and generated reports
 ai/retrieval/chroma_db/
 ai/retrieval/docs/*
 !ai/retrieval/docs/.gitkeep
 ai/stt/audio/
 data/
+!app/lib/features/assistant/data/
+!app/lib/features/assistant/data/**
 models/
 backup_models/
 final_probe_convnext/
 reports/debug/
 reports/**/*.jpg
 *.zip
-*.db
 tree_data.txt
+
+# IDE / OS / logs
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.log
+ai/stt/FarukSTT_experiments_A_B.csv

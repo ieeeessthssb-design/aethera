@@ -2,8 +2,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime, timezone, timedelta
+from uuid import UUID
 import random
 from app.core.dependencies import get_db, get_current_user
 from app.core.config import settings
@@ -16,8 +17,10 @@ from app.schemas.sensor import SensorLatestResponse, SensorReadingResponse
 router = APIRouter(prefix="/farms", tags=["sensors"])
 
 
-async def _get_farm_or_404(farm_id: str, db: AsyncSession) -> Farm:
-    result = await db.execute(select(Farm).where(Farm.id == farm_id))
+async def _get_farm_or_404(farm_id: UUID, current_user: User, db: AsyncSession) -> Farm:
+    result = await db.execute(
+        select(Farm).where(Farm.id == farm_id, Farm.owner_id == current_user.id)
+    )
     farm = result.scalar_one_or_none()
     if farm is None:
         raise HTTPException(status_code=404, detail="Farm not found")
@@ -51,12 +54,12 @@ def _generate_simulated_reading(metric: str, farm_id: str) -> Reading:
 
 @router.get("/{id}/sensors/latest", response_model=SensorLatestResponse)
 async def get_latest_sensor_reading(
-    id: str,
+    id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get the latest aggregated sensor reading for a farm."""
-    await _get_farm_or_404(id, db)
+    await _get_farm_or_404(id, current_user, db)
 
     readings = {}
     for metric in ("soil_moisture", "temperature", "humidity"):
@@ -96,8 +99,8 @@ async def get_latest_sensor_reading(
 
 @router.get("/{id}/sensors/readings", response_model=List[SensorReadingResponse])
 async def get_sensor_readings(
-    id: str,
-    metric: str = Query(..., enum=["soil_moisture", "temperature", "humidity"]),
+    id: UUID,
+    metric: Literal["soil_moisture", "temperature", "humidity"] = Query(...),
     from_: Optional[datetime] = Query(None, alias="from"),
     to: Optional[datetime] = Query(None),
     limit: int = Query(200, le=1000),
@@ -105,7 +108,7 @@ async def get_sensor_readings(
     db: AsyncSession = Depends(get_db),
 ):
     """Get time-series sensor readings for a farm."""
-    await _get_farm_or_404(id, db)
+    await _get_farm_or_404(id, current_user, db)
 
     query = select(Reading).where(Reading.farm_id == id, Reading.metric == metric)
     if from_:

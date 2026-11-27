@@ -1,6 +1,7 @@
 """Advice log ORM model — stores every AI assistant interaction."""
 import uuid
 from datetime import datetime, timezone
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import String, Float, Boolean, DateTime, Enum as SAEnum, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -9,14 +10,14 @@ from app.core.database import Base
 class AdviceLog(Base):
     __tablename__ = "advice_log"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    farm_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("farms.id", ondelete="SET NULL"), nullable=True
+    farm_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("farms.id", ondelete="SET NULL"), nullable=True
     )
     question: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)

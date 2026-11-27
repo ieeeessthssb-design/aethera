@@ -1,8 +1,10 @@
 """Sensor Reading ORM model — high-volume time-series."""
+import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     BigInteger, Integer, String, Float, DateTime, Enum as SAEnum, ForeignKey, Index
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -18,11 +20,11 @@ class Reading(Base):
     id: Mapped[int] = mapped_column(
         BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
     )
-    device_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True
+    device_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    farm_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("farms.id", ondelete="CASCADE"), nullable=False
+    farm_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("farms.id", ondelete="CASCADE"), nullable=False
     )
     metric: Mapped[str] = mapped_column(
         SAEnum("soil_moisture", "temperature", "humidity", name="metric_enum"),

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 
-from app.core.database import AsyncSessionLocal, Base, engine
+from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.models import Device, ExpertCase, ExpertReview, Farm, Reading, User
 
@@ -56,8 +56,4 @@ async def seed() -> None:
 
 
 if __name__ == "__main__":
-    async def _run():
-        async with engine.begin() as c:
-            await c.run_sync(Base.metadata.create_all)
-        await seed()
-    asyncio.run(_run())
+    asyncio.run(seed())

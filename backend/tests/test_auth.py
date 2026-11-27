@@ -1,8 +1,10 @@
 """Tests for authentication endpoints."""
 import pytest
+from uuid import uuid4
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.core.security import hash_password, verify_password, create_access_token, decode_token
+from app.services import auth_service
 
 
 # --- Unit tests for security functions ---
@@ -11,7 +13,7 @@ def test_hash_password():
     """Password hashing should produce a bcrypt hash."""
     hashed = hash_password("test_password")
     assert hashed != "test_password"
-    assert hashed.startswith("$2b$")  # bcrypt prefix
+    assert hashed.startswith("$2b$")  # new hashes use bcrypt; verification also accepts legacy Argon2
 
 
 def test_verify_password():
@@ -36,32 +38,32 @@ def test_decode_invalid_token():
 # --- Integration tests for auth endpoints ---
 
 @pytest.mark.asyncio
-async def test_register_and_login():
-    """Test full register + login flow."""
+async def test_registration_requires_email_verification(monkeypatch):
+    """Main's simple registration is adapted to the local verified-email contract."""
+    async def send_email(**kwargs):
+        return None
+
+    monkeypatch.setattr(auth_service, "send_verification_email", send_email)
+    email = f"integration-{uuid4().hex}@example.com"
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        # Register
+        # Accept the upstream `name` field but keep the local password policy
+        # and OTP verification step.
         resp = await client.post("/auth/register", json={
             "name": "Test User",
-            "email": "test_integration@example.com",
-            "password": "password123",
+            "email": email,
+            "password": "password1234",
             "role": "farmer",
         })
-        # Note: May return 409 if already registered from a previous run
-        assert resp.status_code in (201, 409)
+        assert resp.status_code == 202
+        assert resp.json()["verification_required"] is True
 
-        # Login
         resp = await client.post("/auth/login", json={
-            "email": "test_integration@example.com",
-            "password": "password123",
+            "email": email,
+            "password": "password1234",
         })
-        # Only check if we successfully registered
-        if resp.status_code == 200:
-            data = resp.json()
-            assert "token" in data
-            assert "user" in data
-            assert data["user"]["role"] == "farmer"
+        assert resp.status_code == 401
 
 
 @pytest.mark.asyncio

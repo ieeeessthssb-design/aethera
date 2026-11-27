@@ -1,0 +1,15 @@
+--- a/backend/app/routers/devices.py
++++ b/backend/app/routers/devices.py
+@@ -151,9 +151,10 @@
+     )
+ 
+     db.add(reading)
++    # Simulated packets still prove the test device is actively sending data.
++    # Keep alert generation restricted to real sensor traffic below.
++    device.last_seen_at = datetime.now(timezone.utc)
+     if not simulated:
+-        device.last_seen_at = datetime.now(timezone.utc)
+-    
+         # Deterministic agronomic thresholds only; this does not invoke AI/diagnosis.
+         alert_specs = []
+         if payload.soil_moisture < 20:

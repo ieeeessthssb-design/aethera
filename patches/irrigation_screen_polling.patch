@@ -1,0 +1,26 @@
+--- a/app/lib/features/irrigation/presentation/irrigation_screen.dart
++++ b/app/lib/features/irrigation/presentation/irrigation_screen.dart
+@@ -15,6 +15,23 @@
+ 
+ class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
+   String? _selectedFarmId;
++  Timer? _sensorRefreshTimer;
++
++  @override
++  void initState() {
++    super.initState();
++    _sensorRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
++      if (!mounted) return;
++      ref.invalidate(farmDevicesProvider);
++      ref.invalidate(latestDeviceReadingProvider);
++    });
++  }
++
++  @override
++  void dispose() {
++    _sensorRefreshTimer?.cancel();
++    super.dispose();
++  }
+ 
+   static const Color _forest = Color(0xFF183F32);
+   static const Color _green = Color(0xFF527B58);

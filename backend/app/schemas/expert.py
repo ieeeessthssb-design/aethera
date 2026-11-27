@@ -2,6 +2,7 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
+from uuid import UUID
 import json
 
 
@@ -29,8 +30,8 @@ class ExpertReviewResponse(BaseModel):
 class ExpertCaseListItem(BaseModel):
     model_config = {"from_attributes": True}
 
-    id: str
-    farm_id: Optional[str] = None
+    id: UUID
+    farm_id: Optional[UUID] = None
     farmer_name: str
     crop: str
     region: str
