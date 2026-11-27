@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_config.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../diagnosis/data/diagnosis_api_service.dart';
 
@@ -185,9 +186,16 @@ class _DiagnosisQueueScreenState extends State<DiagnosisQueueScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.broken_image_outlined, color: muted, size: 30),
+                      const Icon(
+                        Icons.broken_image_outlined,
+                        color: muted,
+                        size: 30,
+                      ),
                       const SizedBox(height: 7),
-                      Text(AppLocalizations.of(context)!.expertPhotoUnavailable, style: const TextStyle(color: muted)),
+                      Text(
+                        AppLocalizations.of(context)!.expertPhotoUnavailable,
+                        style: const TextStyle(color: muted),
+                      ),
                     ],
                   ),
                 );
@@ -277,10 +285,12 @@ class _DiagnosisQueueScreenState extends State<DiagnosisQueueScreen> {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: Theme.of(context).copyWith(
+      data: AppTheme.lightTheme.copyWith(
         scaffoldBackgroundColor: cream,
-        textTheme: Theme.of(context).textTheme
-            .apply(bodyColor: ink, displayColor: forest),
+        textTheme: AppTheme.lightTheme.textTheme.apply(
+          bodyColor: ink,
+          displayColor: forest,
+        ),
       ),
       child: Scaffold(
         backgroundColor: cream,
@@ -328,7 +338,9 @@ class _DiagnosisQueueScreenState extends State<DiagnosisQueueScreen> {
                       FilledButton(
                         onPressed: _load,
                         style: FilledButton.styleFrom(backgroundColor: forest),
-                        child: Text(AppLocalizations.of(context)!.communityRetry),
+                        child: Text(
+                          AppLocalizations.of(context)!.communityRetry,
+                        ),
                       ),
                     ],
                   ),
@@ -553,7 +565,10 @@ class _DiagnosisReviewDialogState extends State<_DiagnosisReviewDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(AppLocalizations.of(context)!.expertCancel, style: TextStyle(color: muted)),
+          child: Text(
+            AppLocalizations.of(context)!.expertCancel,
+            style: TextStyle(color: muted),
+          ),
         ),
         OutlinedButton(
           onPressed: () => _submit(false),

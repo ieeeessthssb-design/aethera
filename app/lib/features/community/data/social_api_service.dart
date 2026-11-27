@@ -3,32 +3,35 @@ import 'package:dio/dio.dart';
 import 'social_models.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+
 class SocialApiService {
   SocialApiService(this._dio);
 
   final Dio _dio;
   Future<Uint8List> getPostImage(String imageUrl) async {
-  final response = await _dio.get<List<int>>(
-    imageUrl,
-    options: Options(responseType: ResponseType.bytes),
-  );
+    final response = await _dio.get<List<int>>(
+      imageUrl,
+      options: Options(responseType: ResponseType.bytes),
+    );
 
-  return Uint8List.fromList(response.data!);
-}
+    return Uint8List.fromList(response.data!);
+  }
+
   Future<List<PersonSearchResult>> searchPeople(String query) async {
-  final response = await _dio.get(
-    '/social/people/search',
-    queryParameters: {'q': query.trim()},
-  );
+    final response = await _dio.get(
+      '/social/people/search',
+      queryParameters: {'q': query.trim()},
+    );
 
-  return (response.data as List)
-      .map(
-        (item) => PersonSearchResult.fromJson(
-          Map<String, dynamic>.from(item as Map),
-        ),
-      )
-      .toList();
-}
+    return (response.data as List)
+        .map(
+          (item) => PersonSearchResult.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList();
+  }
+
   Future<SocialProfile> getMyProfile() async {
     final response = await _dio.get('/social/profile/me');
     return SocialProfile.fromJson(
@@ -59,25 +62,20 @@ class SocialApiService {
         .toList();
   }
 
-Future<SocialPost> createPost(String body, {XFile? photo}) async {
-  final formData = FormData.fromMap({
-    'body': body,
-    if (photo != null)
-      'photo': await MultipartFile.fromFile(
-        photo.path,
-        filename: photo.name,
-      ),
-  });
+  Future<SocialPost> createPost(String body, {XFile? photo}) async {
+    final formData = FormData.fromMap({
+      'body': body,
+      if (photo != null)
+        'photo': MultipartFile.fromBytes(
+          await photo.readAsBytes(),
+          filename: photo.name.isEmpty ? 'post_photo.jpg' : photo.name,
+        ),
+    });
 
-  final response = await _dio.post(
-    '/social/posts',
-    data: formData,
-  );
+    final response = await _dio.post('/social/posts', data: formData);
 
-  return SocialPost.fromJson(
-    Map<String, dynamic>.from(response.data as Map),
-  );
-}
+    return SocialPost.fromJson(Map<String, dynamic>.from(response.data as Map));
+  }
 
   Future<List<SocialConnection>> getConnections() async {
     final response = await _dio.get('/social/connections');

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/token_storage.dart';
-import '../../farmer/presentation/farm_api_service.dart';
 import '../data/irrigation_api_service.dart';
 import '../data/irrigation_providers.dart';
 
@@ -183,9 +182,15 @@ class _DeviceManagementScreenState extends ConsumerState<DeviceManagementScreen>
     final status = device['connection_status']?.toString() ?? 'unknown';
     final online = status == 'online';
     final disabled = status == 'disabled';
+    final statusLabel = switch (status) {
+      'online' => _s('Online', 'En ligne', 'متصل'),
+      'stale' => _s('Stale', 'Données anciennes', 'البيانات قديمة'),
+      'disabled' => _s('Disabled', 'Désactivé', 'معطّل'),
+      _ => _s('Awaiting data', 'En attente de données', 'بانتظار البيانات'),
+    };
     return Card(margin: const EdgeInsets.only(bottom: 12), color: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFE6EAE3))), child: Padding(padding: const EdgeInsets.all(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [CircleAvatar(backgroundColor: online ? const Color(0xFFE3F2E7) : const Color(0xFFFFF1DB), child: Icon(Icons.sensors, color: online ? Colors.green : Colors.orange)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(device['name']?.toString() ?? 'IoT Device', style: const TextStyle(fontWeight: FontWeight.w800, color: _forest)), if (device['is_simulated'] == true) const Text('SIMULATED', style: TextStyle(fontSize: 9, color: Colors.deepPurple, fontWeight: FontWeight.bold)), Text(status.toUpperCase(), style: TextStyle(fontSize: 11, letterSpacing: .8, fontWeight: FontWeight.bold, color: online ? Colors.green : Colors.orange))])), if (!disabled) IconButton(tooltip: _s('Disable device', 'Désactiver', 'تعطيل الجهاز'), onPressed: () => _deactivate(farmId, device), icon: const Icon(Icons.power_settings_new_rounded, color: Colors.redAccent))]),
-      const SizedBox(height: 8), SelectableText('ID: $id', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+      Row(children: [CircleAvatar(backgroundColor: online ? const Color(0xFFE3F2E7) : const Color(0xFFFFF1DB), child: Icon(Icons.sensors, color: online ? Colors.green : Colors.orange)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(device['name']?.toString() ?? _s('IoT device', 'Appareil IoT', 'جهاز إنترنت الأشياء'), style: const TextStyle(fontWeight: FontWeight.w800, color: _forest)), if (device['is_simulated'] == true) Text(_s('SIMULATED', 'SIMULÉ', 'محاكاة'), style: const TextStyle(fontSize: 9, color: Colors.deepPurple, fontWeight: FontWeight.bold)), Text(statusLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: online ? Colors.green : Colors.orange))])), if (!disabled) IconButton(tooltip: _s('Disable device', 'Désactiver', 'تعطيل الجهاز'), onPressed: () => _deactivate(farmId, device), icon: const Icon(Icons.power_settings_new_rounded, color: Colors.redAccent))]),
+      const SizedBox(height: 8), SelectableText('${_s('ID', 'ID', 'المعرّف')}: $id', style: const TextStyle(fontSize: 11, color: Colors.black54)),
       Text('${_s('Last contact', 'Dernier contact', 'آخر اتصال')}: ${device['last_seen_at'] ?? _s('Never', 'Jamais', 'أبداً')}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
       Align(alignment: AlignmentDirectional.centerEnd, child: TextButton.icon(onPressed: () => _showHistory(farmId, device), icon: const Icon(Icons.history), label: Text(_s('Reading history', 'Historique des mesures', 'سجل القراءات')))),
       const Divider(height: 22),

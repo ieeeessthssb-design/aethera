@@ -45,7 +45,7 @@ class ExpertAccessScreen extends StatelessWidget {
                     : 'Thank you for joining AETHERA. Our team needs to approve your expert account before you can access the expert workspace.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF849087),
+                  color: Color(0xFF526158),
                   fontSize: 14,
                   height: 1.6,
                 ),

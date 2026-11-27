@@ -52,6 +52,7 @@ from app.services.auth_service import (
     PhoneVerificationRequired,
     GoogleAccountAlreadyExists,
     InvalidGoogleAuthentication,
+    GoogleAuthenticationNotConfigured,
     authenticate_google_user,
 )
 
@@ -299,6 +300,14 @@ async def sign_in_google(
             detail=(
                 "An account with this email already exists. "
                 "Please sign in using your existing method before linking Google."
+            ),
+        ) from None
+    except GoogleAuthenticationNotConfigured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Google sign-in is not configured on the API. Set a valid "
+                "FIREBASE_CREDENTIALS_PATH to a Firebase Admin service-account file."
             ),
         ) from None
     except InvalidGoogleAuthentication:

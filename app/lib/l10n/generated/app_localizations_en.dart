@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -623,4 +622,262 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherLocationSaved => 'Farm location saved.';
+
+  @override
+  String get authTitleWelcome => 'Welcome back';
+
+  @override
+  String get authTitleCreate => 'Create your account';
+
+  @override
+  String get authTitleVerify => 'Verify your email';
+
+  @override
+  String get authSubtitle => 'Your smart agriculture platform.';
+
+  @override
+  String get authVerifyHint => 'Enter the six-digit code sent to your email.';
+
+  @override
+  String get authCodeLabel => 'Verification code';
+
+  @override
+  String get authCodeInvalid => 'Enter the six-digit code.';
+
+  @override
+  String get authResend => 'Resend verification code';
+
+  @override
+  String get authNameLabel => 'Full name';
+
+  @override
+  String get authNameRequired => 'Enter your full name.';
+
+  @override
+  String get authAccountType => 'Account type';
+
+  @override
+  String get authChooseRole => 'Choose account type';
+
+  @override
+  String get authFarmer => 'Farmer';
+
+  @override
+  String get authExpert => 'Expert';
+
+  @override
+  String get authEmailLabel => 'Email address';
+
+  @override
+  String get authEmailInvalid => 'Enter a valid email address.';
+
+  @override
+  String get authPasswordLabel => 'Password';
+
+  @override
+  String get authPasswordRequired => 'Enter your password.';
+
+  @override
+  String get authPasswordLength => 'Use at least 12 characters.';
+
+  @override
+  String get authTerms => 'I agree to the terms and privacy policy.';
+
+  @override
+  String get authVerifyButton => 'VERIFY EMAIL';
+
+  @override
+  String get authCreateButton => 'CREATE ACCOUNT';
+
+  @override
+  String get authSignInButton => 'SIGN IN';
+
+  @override
+  String get authDivider => 'OR';
+
+  @override
+  String get authGoogleButton => 'Continue with Google';
+
+  @override
+  String get authSwitchSignIn => 'Already have an account? Sign in';
+
+  @override
+  String get authSwitchSignUp => 'New to AETHERA? Create an account';
+
+  @override
+  String get adminHeader => 'Admin dashboard';
+
+  @override
+  String get adminOverview => 'Platform overview';
+
+  @override
+  String get adminTotalUsers => 'Total users';
+
+  @override
+  String get adminActiveUsers => 'Active users';
+
+  @override
+  String get adminFarmers => 'Farmers';
+
+  @override
+  String get adminExperts => 'Experts';
+
+  @override
+  String get adminPendingExperts => 'Pending experts';
+
+  @override
+  String get adminApplications => 'Expert applications';
+
+  @override
+  String get adminNoApplications => 'No expert applications need review.';
+
+  @override
+  String get adminUsers => 'User accounts';
+
+  @override
+  String get adminNoUsers => 'No user accounts found.';
+
+  @override
+  String get adminApprove => 'Approve';
+
+  @override
+  String get adminReject => 'Reject';
+
+  @override
+  String get adminUserActive => 'Active';
+
+  @override
+  String get adminUserInactive => 'Inactive';
+
+  @override
+  String get adminLogout => 'Sign out';
+
+  @override
+  String get adminLoadFailed => 'Could not load the admin dashboard.';
+
+  @override
+  String get adminRetry => 'Retry';
+
+  @override
+  String get adminRoleAdmin => 'Administrator';
+
+  @override
+  String get adminStatusUpdated => 'Account status updated.';
+
+  @override
+  String get diagnosisTitle => 'Crop diagnosis';
+
+  @override
+  String get diagnosisRefresh => 'Refresh cases';
+
+  @override
+  String get diagnosisLoadError =>
+      'Could not load your data. Check your connection and try again.';
+
+  @override
+  String get diagnosisPhotoError => 'Could not open the photo.';
+
+  @override
+  String get diagnosisAddFarm => 'Please add a farm first.';
+
+  @override
+  String get diagnosisSelectPhoto => 'Please select a crop photo.';
+
+  @override
+  String get diagnosisDescribeSymptoms =>
+      'Please describe the symptoms in a little more detail.';
+
+  @override
+  String get diagnosisNew => 'New crop diagnosis';
+
+  @override
+  String get diagnosisInstructions =>
+      'Send a photo and symptoms to an agricultural expert.';
+
+  @override
+  String get diagnosisSelectFarm => 'Select your farm';
+
+  @override
+  String get diagnosisChoosePhoto => 'Choose crop photo';
+
+  @override
+  String get diagnosisChangePhoto => 'Change photo';
+
+  @override
+  String get diagnosisSymptoms => 'Describe the symptoms';
+
+  @override
+  String get diagnosisSymptomExample =>
+      'Example: yellow spots on leaves, wilting...';
+
+  @override
+  String get diagnosisSubmitting => 'Submitting...';
+
+  @override
+  String get diagnosisSubmit => 'Submit for expert review';
+
+  @override
+  String get diagnosisFarmRequired =>
+      'Add a farm in the Farms tab before submitting a diagnosis.';
+
+  @override
+  String get diagnosisCaseSubmitted =>
+      'Case submitted! An expert can now review it.';
+
+  @override
+  String diagnosisSubmissionFailed(String error) {
+    return 'Submission failed: $error';
+  }
+
+  @override
+  String diagnosisServerError(String status) {
+    return 'Server error ($status)';
+  }
+
+  @override
+  String get diagnosisPendingStatus => 'Pending expert review';
+
+  @override
+  String get diagnosisValidatedStatus => 'Validated by expert';
+
+  @override
+  String get diagnosisRejectedStatus => 'Rejected / needs further review';
+
+  @override
+  String get diagnosisExpertDiagnosis => 'Expert diagnosis';
+
+  @override
+  String get diagnosisExpertRecommendation => 'Expert recommendation';
+
+  @override
+  String diagnosisSubmittedAt(String time) {
+    return 'Submitted: $time';
+  }
+
+  @override
+  String get diagnosisMyCases => 'My diagnosis cases';
+
+  @override
+  String get diagnosisCasesDescription =>
+      'Track your submissions and expert feedback.';
+
+  @override
+  String get diagnosisNoCases => 'No diagnosis cases yet.';
+
+  @override
+  String get diagnosisRetry => 'Retry';
+
+  @override
+  String get authInvalidCredentials => 'Email or password is incorrect.';
+
+  @override
+  String get authGoogleConfiguration =>
+      'Google sign-in is not configured on the server. Add Firebase Admin credentials and restart the API.';
+
+  @override
+  String get authGoogleInvalid =>
+      'Google sign-in could not be verified. Check the Firebase project configuration.';
+
+  @override
+  String get authConnectionError => 'Unable to connect. Please try again.';
 }

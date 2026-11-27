@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import '../../assistant/data/assistant_api_service.dart';
+import 'farm_api_service.dart';
 
 class DerjaVoiceScreen extends ConsumerStatefulWidget {
   const DerjaVoiceScreen({super.key});
@@ -19,6 +21,8 @@ class _DerjaVoiceScreenState extends ConsumerState<DerjaVoiceScreen> with Single
   final FlutterTts _tts = FlutterTts();
   final TextEditingController _questionController =
       TextEditingController();
+  final AssistantApiService _assistantApi = AssistantApiService();
+  final FarmApiService _farmApi = FarmApiService();
 
   bool _available = false;
   bool _listening = false;
@@ -38,7 +42,6 @@ class _DerjaVoiceScreenState extends ConsumerState<DerjaVoiceScreen> with Single
     super.didChangeDependencies();
     final language = Localizations.localeOf(context).languageCode;
     if (_lastLocale != null && _lastLocale != language) {
-      if (_transcript.isNotEmpty) _answer = _getAgriculturalAnswer(_transcript);
       if (_speaking || _listening || _captureRequested) {
         _speech.stop();
         _tts.stop();
@@ -217,37 +220,36 @@ class _DerjaVoiceScreenState extends ConsumerState<DerjaVoiceScreen> with Single
     if (question.isNotEmpty) await _respond(question);
   }
 
-  String _getAgriculturalAnswer(String question) {
-    final l10n = AppLocalizations.of(context)!;
-    final q = question.toLowerCase();
-    final waterTerms = ['irrigation', 'eau', 'arroser', 'ري', 'سقي', 'ماء', 'عطش', 'water', 'watering'];
-    final yellowTerms = ['jaune', 'feuille', 'feuilles', 'صفرا', 'أوراق', 'ورق', 'اصفر', 'yellow', 'leaf', 'leaves'];
-    final pestTerms = ['maladie', 'insecte', 'ravageur', 'مرض', 'حشرة', 'دود', 'آفة', 'disease', 'insect', 'pest'];
-    final tomatoTerms = ['tomate', 'tomates', 'طماطم', 'مطّيشة', 'tomato', 'tomatoes'];
-    final oliveTerms = ['olive', 'olivier', 'زيتون', 'زيتونة', 'olives'];
-    bool containsAny(List<String> terms) => terms.any(q.contains);
-
-    if (containsAny(waterTerms)) return l10n.voiceAnswerWater;
-    if (containsAny(yellowTerms)) return l10n.voiceAnswerYellow;
-    if (containsAny(pestTerms)) return l10n.voiceAnswerPest;
-    if (containsAny(tomatoTerms)) return l10n.voiceAnswerTomato;
-    if (containsAny(oliveTerms)) return l10n.voiceAnswerOlive;
-    return l10n.voiceAnswerGeneral;
-  }
-
   Future<void> _respond(String question) async {
     if (question.trim().isEmpty || _busy) return;
 
     setState(() {
       _busy = true;
       _transcript = question;
-      _answer = _getAgriculturalAnswer(question);
+      _answer = '';
     });
 
     try {
+      final farms = await _farmApi.getMyFarms();
+      if (farms.isEmpty) {
+        throw StateError('Add a farm before asking the assistant.');
+      }
+      final result = await _assistantApi.ask(
+        farmId: farms.first.id,
+        message: question,
+      );
+      final answer = result['answer']?.toString().trim() ?? '';
+      if (answer.isEmpty) {
+        throw const FormatException('The assistant returned an empty answer.');
+      }
+      if (mounted) setState(() => _answer = answer);
       await _speakText(_answer);
-    } catch (_) {
-      _showMessage(AppLocalizations.of(context)!.voiceAudioError);
+    } catch (error) {
+      final message = error.toString().replaceFirst('Bad state: ', '');
+      if (mounted) {
+        setState(() => _answer = message);
+        _showMessage(message);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

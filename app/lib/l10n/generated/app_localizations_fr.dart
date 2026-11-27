@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -636,4 +635,266 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get weatherLocationSaved =>
       'Emplacement de l’exploitation enregistré.';
+
+  @override
+  String get authTitleWelcome => 'Bon retour';
+
+  @override
+  String get authTitleCreate => 'Cr?ez votre compte';
+
+  @override
+  String get authTitleVerify => 'V?rifiez votre adresse e-mail';
+
+  @override
+  String get authSubtitle => 'Votre plateforme agricole intelligente.';
+
+  @override
+  String get authVerifyHint =>
+      'Saisissez le code ? six chiffres envoy? par e-mail.';
+
+  @override
+  String get authCodeLabel => 'Code de v?rification';
+
+  @override
+  String get authCodeInvalid => 'Saisissez le code ? six chiffres.';
+
+  @override
+  String get authResend => 'Renvoyer le code de v?rification';
+
+  @override
+  String get authNameLabel => 'Nom complet';
+
+  @override
+  String get authNameRequired => 'Saisissez votre nom complet.';
+
+  @override
+  String get authAccountType => 'Type de compte';
+
+  @override
+  String get authChooseRole => 'Choisir le type de compte';
+
+  @override
+  String get authFarmer => 'Agriculteur';
+
+  @override
+  String get authExpert => 'Expert';
+
+  @override
+  String get authEmailLabel => 'Adresse e-mail';
+
+  @override
+  String get authEmailInvalid => 'Saisissez une adresse e-mail valide.';
+
+  @override
+  String get authPasswordLabel => 'Mot de passe';
+
+  @override
+  String get authPasswordRequired => 'Saisissez votre mot de passe.';
+
+  @override
+  String get authPasswordLength => 'Utilisez au moins 12 caract?res.';
+
+  @override
+  String get authTerms =>
+      'J?accepte les conditions et la politique de confidentialit?.';
+
+  @override
+  String get authVerifyButton => 'V?RIFIER L?E-MAIL';
+
+  @override
+  String get authCreateButton => 'CR?ER UN COMPTE';
+
+  @override
+  String get authSignInButton => 'SE CONNECTER';
+
+  @override
+  String get authDivider => 'OU';
+
+  @override
+  String get authGoogleButton => 'Continuer avec Google';
+
+  @override
+  String get authSwitchSignIn => 'Vous avez d?j? un compte ? Connectez-vous';
+
+  @override
+  String get authSwitchSignUp => 'Nouveau sur AETHERA ? Cr?ez un compte';
+
+  @override
+  String get adminHeader => 'Tableau de bord admin';
+
+  @override
+  String get adminOverview => 'Vue d?ensemble';
+
+  @override
+  String get adminTotalUsers => 'Utilisateurs';
+
+  @override
+  String get adminActiveUsers => 'Utilisateurs actifs';
+
+  @override
+  String get adminFarmers => 'Agriculteurs';
+
+  @override
+  String get adminExperts => 'Experts';
+
+  @override
+  String get adminPendingExperts => 'Experts en attente';
+
+  @override
+  String get adminApplications => 'Candidatures d?experts';
+
+  @override
+  String get adminNoApplications => 'Aucune candidature d?expert ? examiner.';
+
+  @override
+  String get adminUsers => 'Comptes utilisateurs';
+
+  @override
+  String get adminNoUsers => 'Aucun compte utilisateur trouv?.';
+
+  @override
+  String get adminApprove => 'Approuver';
+
+  @override
+  String get adminReject => 'Refuser';
+
+  @override
+  String get adminUserActive => 'Actif';
+
+  @override
+  String get adminUserInactive => 'Inactif';
+
+  @override
+  String get adminLogout => 'Se d?connecter';
+
+  @override
+  String get adminLoadFailed =>
+      'Impossible de charger le tableau de bord admin.';
+
+  @override
+  String get adminRetry => 'R?essayer';
+
+  @override
+  String get adminRoleAdmin => 'Administrateur';
+
+  @override
+  String get adminStatusUpdated => 'Statut du compte mis ? jour.';
+
+  @override
+  String get diagnosisTitle => 'Diagnostic des cultures';
+
+  @override
+  String get diagnosisRefresh => 'Actualiser les dossiers';
+
+  @override
+  String get diagnosisLoadError =>
+      'Impossible de charger les donn?es. V?rifiez votre connexion.';
+
+  @override
+  String get diagnosisPhotoError => 'Impossible d?ouvrir la photo.';
+
+  @override
+  String get diagnosisAddFarm => 'Veuillez d?abord ajouter une exploitation.';
+
+  @override
+  String get diagnosisSelectPhoto => 'Veuillez choisir une photo de culture.';
+
+  @override
+  String get diagnosisDescribeSymptoms =>
+      'D?crivez les sympt?mes plus en d?tail.';
+
+  @override
+  String get diagnosisNew => 'Nouveau diagnostic de culture';
+
+  @override
+  String get diagnosisInstructions =>
+      'Envoyez une photo et les sympt?mes ? un expert agricole.';
+
+  @override
+  String get diagnosisSelectFarm => 'Choisissez votre exploitation';
+
+  @override
+  String get diagnosisChoosePhoto => 'Choisir une photo';
+
+  @override
+  String get diagnosisChangePhoto => 'Changer la photo';
+
+  @override
+  String get diagnosisSymptoms => 'D?crire les sympt?mes';
+
+  @override
+  String get diagnosisSymptomExample =>
+      'Exemple : taches jaunes sur les feuilles, fl?trissement?';
+
+  @override
+  String get diagnosisSubmitting => 'Envoi?';
+
+  @override
+  String get diagnosisSubmit => 'Envoyer ? un expert';
+
+  @override
+  String get diagnosisFarmRequired =>
+      'Ajoutez une exploitation dans l?onglet Exploitations avant le diagnostic.';
+
+  @override
+  String get diagnosisCaseSubmitted =>
+      'Dossier envoy?. Un expert peut maintenant l?examiner.';
+
+  @override
+  String diagnosisSubmissionFailed(String error) {
+    return '?chec de l?envoi : $error';
+  }
+
+  @override
+  String diagnosisServerError(String status) {
+    return 'Erreur du serveur ($status)';
+  }
+
+  @override
+  String get diagnosisPendingStatus => 'En attente d?un expert';
+
+  @override
+  String get diagnosisValidatedStatus => 'Valid? par un expert';
+
+  @override
+  String get diagnosisRejectedStatus => 'Refus? / ? r?examiner';
+
+  @override
+  String get diagnosisExpertDiagnosis => 'Diagnostic de l?expert';
+
+  @override
+  String get diagnosisExpertRecommendation => 'Recommandation de l?expert';
+
+  @override
+  String diagnosisSubmittedAt(String time) {
+    return 'Envoy? : $time';
+  }
+
+  @override
+  String get diagnosisMyCases => 'Mes dossiers de diagnostic';
+
+  @override
+  String get diagnosisCasesDescription =>
+      'Suivez vos envois et les retours des experts.';
+
+  @override
+  String get diagnosisNoCases => 'Aucun dossier de diagnostic.';
+
+  @override
+  String get diagnosisRetry => 'R?essayer';
+
+  @override
+  String get authInvalidCredentials =>
+      'Adresse e-mail ou mot de passe incorrect.';
+
+  @override
+  String get authGoogleConfiguration =>
+      'La connexion Google n?est pas configur?e sur le serveur. Ajoutez les identifiants Firebase Admin puis red?marrez l?API.';
+
+  @override
+  String get authGoogleInvalid =>
+      'La connexion Google n?a pas pu ?tre v?rifi?e. V?rifiez la configuration Firebase.';
+
+  @override
+  String get authConnectionError => 'Connexion impossible. Veuillez r?essayer.';
 }

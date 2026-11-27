@@ -21,6 +21,10 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: lightBackground,
     cardColor: Colors.white,
+    textTheme: Typography.material2021().black.apply(
+      bodyColor: const Color(0xFF26352B),
+      displayColor: const Color(0xFF26352B),
+    ),
     fontFamily: 'Tajawal',
     appBarTheme: const AppBarTheme(
       backgroundColor: lightBackground,
@@ -38,6 +42,8 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
+      labelStyle: const TextStyle(color: Color(0xFF4C5B52)),
+      hintStyle: const TextStyle(color: Color(0xFF5C6A61)),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: lightBorder)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: lightBorder)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: forestGreen, width: 1.5)),
@@ -57,9 +63,13 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: darkBackground,
     cardColor: const Color(0xFF173629),
+    textTheme: Typography.material2021().white.apply(
+      bodyColor: const Color(0xFFE5EEE8),
+      displayColor: const Color(0xFFE5EEE8),
+    ),
     fontFamily: 'Tajawal',
     appBarTheme: const AppBarTheme(backgroundColor: darkBackground, foregroundColor: limeGreen, elevation: 0),
     cardTheme: CardThemeData(color: const Color(0xFF173629), elevation: 1, margin: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(18)))),
-    inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: const Color(0xFF173629), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)),
+    inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: const Color(0xFF173629), labelStyle: const TextStyle(color: Color(0xFFC1D1C5)), hintStyle: const TextStyle(color: Color(0xFFB5C5BA)), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)), contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13)),
   );
 }

@@ -16,7 +16,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  final preferences = await SharedPreferences.getInstance();
+final preferences = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(

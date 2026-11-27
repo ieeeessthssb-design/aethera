@@ -1,5 +1,4 @@
-
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -169,8 +168,7 @@ class _PeopleSearchCard extends ConsumerStatefulWidget {
   const _PeopleSearchCard();
 
   @override
-  ConsumerState<_PeopleSearchCard> createState() =>
-      _PeopleSearchCardState();
+  ConsumerState<_PeopleSearchCard> createState() => _PeopleSearchCardState();
 }
 
 class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
@@ -201,9 +199,7 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
 
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => ConversationScreen(
-            conversation: conversation,
-          ),
+          builder: (_) => ConversationScreen(conversation: conversation),
         ),
       );
     } catch (error) {
@@ -230,7 +226,9 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
 
       if (!mounted) return;
 
-      _showMessage('${AppLocalizations.of(context)!.communityConnectionSent} ${person.fullName}.');
+      _showMessage(
+        '${AppLocalizations.of(context)!.communityConnectionSent} ${person.fullName}.',
+      );
     } catch (error) {
       if (mounted) {
         _showMessage(_friendlyError(error));
@@ -243,9 +241,9 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -255,9 +253,7 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
     return Card(
       color: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(15),
         child: Column(
@@ -300,8 +296,7 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
                       ),
                 filled: true,
                 fillColor: _cream,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 13),
+                contentPadding: const EdgeInsets.symmetric(vertical: 13),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -341,8 +336,7 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
                   return Column(
                     children: people.map((person) {
                       final isSending = _sendingTo == person.userId;
-                      final isExpert =
-                          person.role.toLowerCase() == 'expert';
+                      final isExpert = person.role.toLowerCase() == 'expert';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 5),
@@ -351,9 +345,7 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
                           leading: CircleAvatar(
                             backgroundColor: _lightGreen,
                             child: Icon(
-                              isExpert
-                                  ? Icons.workspace_premium
-                                  : Icons.person,
+                              isExpert ? Icons.workspace_premium : Icons.person,
                               color: _forest,
                             ),
                           ),
@@ -391,7 +383,9 @@ class _PeopleSearchCardState extends ConsumerState<_PeopleSearchCard> {
                                           Icons.chat_outlined,
                                           size: 17,
                                         ),
-                                  label: Text(AppLocalizations.of(context)!.communityAsk),
+                                  label: Text(
+                                    AppLocalizations.of(context)!.communityAsk,
+                                  ),
                                   style: FilledButton.styleFrom(
                                     foregroundColor: _forest,
                                     backgroundColor: _lightGreen,
@@ -440,8 +434,7 @@ class _CreatePostCard extends ConsumerStatefulWidget {
   final VoidCallback onCreated;
 
   @override
-  ConsumerState<_CreatePostCard> createState() =>
-      _CreatePostCardState();
+  ConsumerState<_CreatePostCard> createState() => _CreatePostCardState();
 }
 
 class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
@@ -449,6 +442,7 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
   final _picker = ImagePicker();
 
   XFile? _photo;
+  Uint8List? _photoBytes;
   bool _sending = false;
 
   @override
@@ -467,12 +461,20 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
         maxWidth: 1600,
       );
 
-      if (photo != null && mounted) {
-        setState(() => _photo = photo);
+      if (photo != null) {
+        final bytes = await photo.readAsBytes();
+        if (mounted) {
+          setState(() {
+            _photo = photo;
+            _photoBytes = bytes;
+          });
+        }
       }
     } catch (error) {
       if (mounted) {
-        _showMessage('${AppLocalizations.of(context)!.communityImageError}: $error');
+        _showMessage(
+          '${AppLocalizations.of(context)!.communityImageError}: $error',
+        );
       }
     }
   }
@@ -490,10 +492,7 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
     setState(() => _sending = true);
 
     try {
-      await ref.read(socialApiServiceProvider).createPost(
-            body,
-            photo: _photo,
-          );
+      await ref.read(socialApiServiceProvider).createPost(body, photo: _photo);
 
       if (!mounted) return;
 
@@ -501,6 +500,7 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
 
       setState(() {
         _photo = null;
+        _photoBytes = null;
       });
 
       ref.invalidate(socialFeedProvider);
@@ -519,9 +519,9 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -529,9 +529,7 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
     return Card(
       color: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(15),
         child: Column(
@@ -559,18 +557,10 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
               maxLength: 5000,
               enabled: !_sending,
               cursorColor: _forest,
-              style: const TextStyle(
-                color: _text,
-                fontSize: 15,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: _text, fontSize: 15, height: 1.4),
               decoration: InputDecoration(
-                hintText:
-                    'Share an update, question, or farming tip...',
-                hintStyle: const TextStyle(
-                  color: _muted,
-                  fontSize: 14,
-                ),
+                hintText: 'Share an update, question, or farming tip...',
+                hintStyle: const TextStyle(color: _muted, fontSize: 14),
                 filled: true,
                 fillColor: _cream,
                 contentPadding: const EdgeInsets.all(14),
@@ -585,19 +575,16 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(13),
-                  borderSide: const BorderSide(
-                    color: _green,
-                    width: 1.5,
-                  ),
+                  borderSide: const BorderSide(color: _green, width: 1.5),
                 ),
               ),
             ),
-            if (_photo != null) ...[
+            if (_photo != null && _photoBytes != null) ...[
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  File(_photo!.path),
+                child: Image.memory(
+                  _photoBytes!,
                   height: 190,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -608,12 +595,15 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
                 child: TextButton.icon(
                   onPressed: _sending
                       ? null
-                      : () => setState(() => _photo = null),
+                      : () => setState(() {
+                          _photo = null;
+                          _photoBytes = null;
+                        }),
                   icon: const Icon(Icons.delete_outline),
-                  label: Text(AppLocalizations.of(context)!.communityRemovePhoto),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
+                  label: Text(
+                    AppLocalizations.of(context)!.communityRemovePhoto,
                   ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
                 ),
               ),
             ],
@@ -642,9 +632,7 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
                           ),
                         )
                       : const Icon(Icons.send_rounded),
-                  label: Text(
-                    _sending ? 'Publishing...' : 'Publish',
-                  ),
+                  label: Text(_sending ? 'Publishing...' : 'Publish'),
                   style: FilledButton.styleFrom(
                     backgroundColor: _forest,
                     foregroundColor: Colors.white,
@@ -667,7 +655,6 @@ class _CreatePostCardState extends ConsumerState<_CreatePostCard> {
 // FEED POST
 // -----------------------------------------------------------------------------
 
-
 class _PostCard extends ConsumerWidget {
   const _PostCard({required this.post});
 
@@ -681,9 +668,7 @@ class _PostCard extends ConsumerWidget {
       color: Colors.white,
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(17),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -707,10 +692,7 @@ class _PostCard extends ConsumerWidget {
                 ),
                 Text(
                   _formatDate(post.createdAt),
-                  style: const TextStyle(
-                    color: _muted,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(color: _muted, fontSize: 11),
                 ),
               ],
             ),
@@ -718,11 +700,7 @@ class _PostCard extends ConsumerWidget {
               const SizedBox(height: 14),
               SelectableText(
                 post.body,
-                style: const TextStyle(
-                  color: _text,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
+                style: const TextStyle(color: _text, fontSize: 14, height: 1.5),
               ),
             ],
             if (imageUrl != null && imageUrl.isNotEmpty) ...[
@@ -748,9 +726,7 @@ class _PostCard extends ConsumerWidget {
                     return const SizedBox(
                       height: 150,
                       child: Center(
-                        child: CircularProgressIndicator(
-                          color: _forest,
-                        ),
+                        child: CircularProgressIndicator(color: _forest),
                       ),
                     );
                   }
@@ -773,16 +749,12 @@ class _PostCard extends ConsumerWidget {
   }
 }
 
-
 // -----------------------------------------------------------------------------
 // CONNECTIONS
 // -----------------------------------------------------------------------------
 
 class _ConnectionCard extends ConsumerWidget {
-  const _ConnectionCard({
-    required this.connection,
-    required this.onChanged,
-  });
+  const _ConnectionCard({required this.connection, required this.onChanged});
 
   final SocialConnection connection;
   final VoidCallback onChanged;
@@ -792,20 +764,18 @@ class _ConnectionCard extends ConsumerWidget {
     final profile = ref.watch(mySocialProfileProvider);
     final currentId = profile.asData?.value.userId;
 
-    final isIncoming =
-        currentId != null && connection.recipientId == currentId;
+    final isIncoming = currentId != null && connection.recipientId == currentId;
     final isPending = connection.status == 'pending';
 
-    final otherUserId =
-        isIncoming ? connection.requesterId : connection.recipientId;
+    final otherUserId = isIncoming
+        ? connection.requesterId
+        : connection.recipientId;
 
     return Card(
       color: Colors.white,
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 9),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -816,11 +786,7 @@ class _ConnectionCard extends ConsumerWidget {
                 const CircleAvatar(
                   radius: 19,
                   backgroundColor: _lightGreen,
-                  child: Icon(
-                    Icons.person_outline,
-                    color: _forest,
-                    size: 21,
-                  ),
+                  child: Icon(Icons.person_outline, color: _forest, size: 21),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -900,9 +866,9 @@ class _ConnectionCard extends ConsumerWidget {
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_friendlyError(error))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_friendlyError(error))));
       }
     }
   }
@@ -929,8 +895,8 @@ class _StatusLabel extends StatelessWidget {
         color: status == 'accepted'
             ? _lightGreen
             : status == 'pending'
-                ? const Color(0xFFFFF3D9)
-                : const Color(0xFFF2E5E3),
+            ? const Color(0xFFFFF3D9)
+            : const Color(0xFFF2E5E3),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -939,8 +905,8 @@ class _StatusLabel extends StatelessWidget {
           color: status == 'accepted'
               ? _forest
               : status == 'pending'
-                  ? const Color(0xFF805B16)
-                  : const Color(0xFF8A3830),
+              ? const Color(0xFF805B16)
+              : const Color(0xFF8A3830),
           fontSize: 11,
           fontWeight: FontWeight.bold,
         ),
@@ -976,10 +942,7 @@ class _EmptyPanel extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(
-              color: _forest,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(color: _forest, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           Text(
@@ -994,10 +957,7 @@ class _EmptyPanel extends StatelessWidget {
 }
 
 class _ErrorPanel extends StatelessWidget {
-  const _ErrorPanel({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorPanel({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;

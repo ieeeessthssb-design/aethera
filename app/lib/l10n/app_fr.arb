@@ -206,5 +206,107 @@
   "dashboardStale": "Données anciennes",
   "dashboardUnknown": "Inconnu",
   "dashboardDisabled": "Désactivé",
-  "weatherLocationSaved": "Emplacement de l’exploitation enregistré."
+  "weatherLocationSaved": "Emplacement de l’exploitation enregistré.",
+  "authTitleWelcome": "Bon retour",
+  "authTitleCreate": "Cr?ez votre compte",
+  "authTitleVerify": "V?rifiez votre adresse e-mail",
+  "authSubtitle": "Votre plateforme agricole intelligente.",
+  "authVerifyHint": "Saisissez le code ? six chiffres envoy? par e-mail.",
+  "authCodeLabel": "Code de v?rification",
+  "authCodeInvalid": "Saisissez le code ? six chiffres.",
+  "authResend": "Renvoyer le code de v?rification",
+  "authNameLabel": "Nom complet",
+  "authNameRequired": "Saisissez votre nom complet.",
+  "authAccountType": "Type de compte",
+  "authChooseRole": "Choisir le type de compte",
+  "authFarmer": "Agriculteur",
+  "authExpert": "Expert",
+  "authEmailLabel": "Adresse e-mail",
+  "authEmailInvalid": "Saisissez une adresse e-mail valide.",
+  "authPasswordLabel": "Mot de passe",
+  "authPasswordRequired": "Saisissez votre mot de passe.",
+  "authPasswordLength": "Utilisez au moins 12 caract?res.",
+  "authTerms": "J?accepte les conditions et la politique de confidentialit?.",
+  "authVerifyButton": "V?RIFIER L?E-MAIL",
+  "authCreateButton": "CR?ER UN COMPTE",
+  "authSignInButton": "SE CONNECTER",
+  "authDivider": "OU",
+  "authGoogleButton": "Continuer avec Google",
+  "authSwitchSignIn": "Vous avez d?j? un compte ? Connectez-vous",
+  "authSwitchSignUp": "Nouveau sur AETHERA ? Cr?ez un compte",
+  "adminHeader": "Tableau de bord admin",
+  "adminOverview": "Vue d?ensemble",
+  "adminTotalUsers": "Utilisateurs",
+  "adminActiveUsers": "Utilisateurs actifs",
+  "adminFarmers": "Agriculteurs",
+  "adminExperts": "Experts",
+  "adminPendingExperts": "Experts en attente",
+  "adminApplications": "Candidatures d?experts",
+  "adminNoApplications": "Aucune candidature d?expert ? examiner.",
+  "adminUsers": "Comptes utilisateurs",
+  "adminNoUsers": "Aucun compte utilisateur trouv?.",
+  "adminApprove": "Approuver",
+  "adminReject": "Refuser",
+  "adminUserActive": "Actif",
+  "adminUserInactive": "Inactif",
+  "adminLogout": "Se d?connecter",
+  "adminLoadFailed": "Impossible de charger le tableau de bord admin.",
+  "adminRetry": "R?essayer",
+  "adminRoleAdmin": "Administrateur",
+  "adminStatusUpdated": "Statut du compte mis ? jour.",
+  "diagnosisTitle": "Diagnostic des cultures",
+  "diagnosisRefresh": "Actualiser les dossiers",
+  "diagnosisLoadError": "Impossible de charger les donn?es. V?rifiez votre connexion.",
+  "diagnosisPhotoError": "Impossible d?ouvrir la photo.",
+  "diagnosisAddFarm": "Veuillez d?abord ajouter une exploitation.",
+  "diagnosisSelectPhoto": "Veuillez choisir une photo de culture.",
+  "diagnosisDescribeSymptoms": "D?crivez les sympt?mes plus en d?tail.",
+  "diagnosisNew": "Nouveau diagnostic de culture",
+  "diagnosisInstructions": "Envoyez une photo et les sympt?mes ? un expert agricole.",
+  "diagnosisSelectFarm": "Choisissez votre exploitation",
+  "diagnosisChoosePhoto": "Choisir une photo",
+  "diagnosisChangePhoto": "Changer la photo",
+  "diagnosisSymptoms": "D?crire les sympt?mes",
+  "diagnosisSymptomExample": "Exemple : taches jaunes sur les feuilles, fl?trissement?",
+  "diagnosisSubmitting": "Envoi?",
+  "diagnosisSubmit": "Envoyer ? un expert",
+  "diagnosisFarmRequired": "Ajoutez une exploitation dans l?onglet Exploitations avant le diagnostic.",
+  "diagnosisCaseSubmitted": "Dossier envoy?. Un expert peut maintenant l?examiner.",
+  "diagnosisSubmissionFailed": "?chec de l?envoi : {error}",
+  "diagnosisServerError": "Erreur du serveur ({status})",
+  "diagnosisPendingStatus": "En attente d?un expert",
+  "diagnosisValidatedStatus": "Valid? par un expert",
+  "diagnosisRejectedStatus": "Refus? / ? r?examiner",
+  "diagnosisExpertDiagnosis": "Diagnostic de l?expert",
+  "diagnosisExpertRecommendation": "Recommandation de l?expert",
+  "diagnosisSubmittedAt": "Envoy? : {time}",
+  "diagnosisMyCases": "Mes dossiers de diagnostic",
+  "diagnosisCasesDescription": "Suivez vos envois et les retours des experts.",
+  "diagnosisNoCases": "Aucun dossier de diagnostic.",
+  "diagnosisRetry": "R?essayer",
+  "@diagnosisSubmissionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagnosisServerError": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagnosisSubmittedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "authInvalidCredentials": "Adresse e-mail ou mot de passe incorrect.",
+  "authGoogleConfiguration": "La connexion Google n?est pas configur?e sur le serveur. Ajoutez les identifiants Firebase Admin puis red?marrez l?API.",
+  "authGoogleInvalid": "La connexion Google n?a pas pu ?tre v?rifi?e. V?rifiez la configuration Firebase.",
+  "authConnectionError": "Connexion impossible. Veuillez r?essayer."
 }

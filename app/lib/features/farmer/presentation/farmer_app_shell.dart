@@ -1,9 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../community/presentation/community_screen.dart';
 import '../../community/presentation/messages_screen.dart';
@@ -45,37 +45,71 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
   }
 
   List<Widget> _pages(String languageCode) => [
-        FarmerHomeScreen(onNavigate: _selectPage),
-        const _FarmsPage(),
-        IrrigationScreen(key: ValueKey('irrigation-$languageCode')),
-        _AssistantPage(onNavigate: _selectPage),
-        const DiagnosisScreen(),
-        const WeatherScreen(),
-        const CommunityScreen(),
-        const MessagesScreen(),
-        const DeviceManagementScreen(),
-        const _ProfilePage(),
-        const _SettingsPage(),
-      ];
+    FarmerHomeScreen(onNavigate: _selectPage),
+    const _FarmsPage(),
+    IrrigationScreen(key: ValueKey('irrigation-$languageCode')),
+    _AssistantPage(onNavigate: _selectPage),
+    const DiagnosisScreen(),
+    const WeatherScreen(),
+    const CommunityScreen(),
+    const MessagesScreen(),
+    const DeviceManagementScreen(),
+    const _ProfilePage(),
+    const _SettingsPage(),
+  ];
 
   List<_ShellDestination> _destinations(AppLocalizations l10n) => [
-        _ShellDestination(Icons.home_outlined, Icons.home_rounded, l10n.home),
-        _ShellDestination(Icons.agriculture_outlined, Icons.agriculture_rounded, l10n.farms),
-        _ShellDestination(Icons.water_drop_outlined, Icons.water_drop_rounded, l10n.irrigation),
-        _ShellDestination(Icons.graphic_eq_rounded, Icons.graphic_eq_rounded, l10n.assistant),
-        _ShellDestination(Icons.biotech_outlined, Icons.biotech_rounded, l10n.diagnosis),
-        _ShellDestination(Icons.wb_sunny_outlined, Icons.wb_sunny_rounded, l10n.weather),
-        _ShellDestination(Icons.groups_outlined, Icons.groups_rounded, l10n.community),
-        _ShellDestination(Icons.chat_bubble_outline_rounded, Icons.chat_rounded, l10n.messages),
-        _ShellDestination(Icons.devices_other_outlined, Icons.devices_rounded, _deviceManagementLabel(l10n)),
-      ];
-
+    _ShellDestination(Icons.home_outlined, Icons.home_rounded, l10n.home),
+    _ShellDestination(
+      Icons.agriculture_outlined,
+      Icons.agriculture_rounded,
+      l10n.farms,
+    ),
+    _ShellDestination(
+      Icons.water_drop_outlined,
+      Icons.water_drop_rounded,
+      l10n.irrigation,
+    ),
+    _ShellDestination(
+      Icons.graphic_eq_rounded,
+      Icons.graphic_eq_rounded,
+      l10n.assistant,
+    ),
+    _ShellDestination(
+      Icons.biotech_outlined,
+      Icons.biotech_rounded,
+      l10n.diagnosis,
+    ),
+    _ShellDestination(
+      Icons.wb_sunny_outlined,
+      Icons.wb_sunny_rounded,
+      l10n.weather,
+    ),
+    _ShellDestination(
+      Icons.groups_outlined,
+      Icons.groups_rounded,
+      l10n.community,
+    ),
+    _ShellDestination(
+      Icons.chat_bubble_outline_rounded,
+      Icons.chat_rounded,
+      l10n.messages,
+    ),
+    _ShellDestination(
+      Icons.devices_other_outlined,
+      Icons.devices_rounded,
+      _deviceManagementLabel(l10n),
+    ),
+  ];
 
   String _deviceManagementLabel(AppLocalizations l10n) {
     switch (Localizations.localeOf(context).languageCode) {
-      case 'fr': return 'Appareils';
-      case 'ar': return 'الأجهزة';
-      default: return 'Devices';
+      case 'fr':
+        return 'Appareils';
+      case 'ar':
+        return 'الأجهزة';
+      default:
+        return 'Devices';
     }
   }
 
@@ -89,14 +123,33 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
       onDestinationSelected: _selectPage,
       backgroundColor: Colors.white,
       indicatorColor: _lightGreen,
+      selectedLabelTextStyle: const TextStyle(
+        color: _forest,
+        fontWeight: FontWeight.w800,
+      ),
+      unselectedLabelTextStyle: const TextStyle(
+        color: _muted,
+        fontWeight: FontWeight.w500,
+      ),
+      selectedIconTheme: const IconThemeData(color: _forest),
+      unselectedIconTheme: const IconThemeData(color: _green),
       leading: Padding(
         padding: const EdgeInsets.symmetric(vertical: 18),
         child: extended
-            ? Row(children: [
-                const Icon(Icons.eco_rounded, color: _forest, size: 28),
-                const SizedBox(width: 10),
-                const Text('AETHERA', style: TextStyle(color: _forest, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-              ])
+            ? Row(
+                children: [
+                  const Icon(Icons.eco_rounded, color: _forest, size: 28),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'AETHERA',
+                    style: TextStyle(
+                      color: _forest,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              )
             : const Icon(Icons.eco_rounded, color: _forest, size: 29),
       ),
       trailing: Column(
@@ -109,8 +162,17 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
               child: ListTile(
                 selected: _selectedIndex == 9,
                 selectedTileColor: _lightGreen,
-                leading: const CircleAvatar(backgroundColor: _lightGreen, child: Icon(Icons.person_rounded, color: _forest)),
-                title: Text(l10n.profile, style: const TextStyle(color: _forest, fontWeight: FontWeight.w700)),
+                leading: const CircleAvatar(
+                  backgroundColor: _lightGreen,
+                  child: Icon(Icons.person_rounded, color: _forest),
+                ),
+                title: Text(
+                  l10n.profile,
+                  style: const TextStyle(
+                    color: _forest,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 onTap: () => _selectPage(9),
               ),
             ),
@@ -120,21 +182,42 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
                 selected: _selectedIndex == 10,
                 selectedTileColor: _lightGreen,
                 leading: const Icon(Icons.settings_outlined, color: _green),
-                title: Text(l10n.settings, style: const TextStyle(color: _forest, fontWeight: FontWeight.w700)),
+                title: Text(
+                  l10n.settings,
+                  style: const TextStyle(
+                    color: _forest,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 onTap: () => _selectPage(10),
               ),
             ),
           ] else ...[
-            IconButton(tooltip: l10n.profile, onPressed: () => _selectPage(9), icon: const CircleAvatar(backgroundColor: _lightGreen, child: Icon(Icons.person_rounded, color: _forest))),
-            IconButton(tooltip: l10n.settings, onPressed: () => _selectPage(10), icon: const Icon(Icons.settings_outlined, color: _green)),
+            IconButton(
+              tooltip: l10n.profile,
+              onPressed: () => _selectPage(9),
+              icon: const CircleAvatar(
+                backgroundColor: _lightGreen,
+                child: Icon(Icons.person_rounded, color: _forest),
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.settings,
+              onPressed: () => _selectPage(10),
+              icon: const Icon(Icons.settings_outlined, color: _green),
+            ),
           ],
           IconButton(
             tooltip: extended ? l10n.collapseSidebar : l10n.expandSidebar,
             onPressed: () => setState(() => _railExpanded = !_railExpanded),
             icon: Icon(
               Directionality.of(context) == TextDirection.rtl
-                  ? (extended ? Icons.chevron_right_rounded : Icons.chevron_left_rounded)
-                  : (extended ? Icons.chevron_left_rounded : Icons.chevron_right_rounded),
+                  ? (extended
+                        ? Icons.chevron_right_rounded
+                        : Icons.chevron_left_rounded)
+                  : (extended
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded),
               color: _green,
             ),
           ),
@@ -161,11 +244,24 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-              child: Row(children: [
-                const CircleAvatar(backgroundColor: _lightGreen, child: Icon(Icons.eco_rounded, color: _forest)),
-                const SizedBox(width: 12),
-                const Text('AETHERA', style: TextStyle(color: _forest, fontWeight: FontWeight.w900, letterSpacing: 1.4, fontSize: 18)),
-              ]),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundColor: _lightGreen,
+                    child: Icon(Icons.eco_rounded, color: _forest),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'AETHERA',
+                    style: TextStyle(
+                      color: _forest,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.4,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const Divider(height: 1),
             Expanded(
@@ -178,8 +274,19 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
                   return ListTile(
                     selected: selected,
                     selectedTileColor: _lightGreen,
-                    leading: Icon(selected ? item.selectedIcon : item.icon, color: selected ? _forest : _green),
-                    title: Text(item.label, style: TextStyle(color: selected ? _forest : _muted, fontWeight: selected ? FontWeight.w800 : FontWeight.w500)),
+                    leading: Icon(
+                      selected ? item.selectedIcon : item.icon,
+                      color: selected ? _forest : _green,
+                    ),
+                    title: Text(
+                      item.label,
+                      style: TextStyle(
+                        color: selected ? _forest : _muted,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w500,
+                      ),
+                    ),
                     onTap: () => _selectPage(index),
                   );
                 },
@@ -189,15 +296,30 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
             ListTile(
               selected: _selectedIndex == 9,
               selectedTileColor: _lightGreen,
-              leading: const CircleAvatar(backgroundColor: _lightGreen, child: Icon(Icons.person_rounded, color: _forest)),
-              title: Text(l10n.profile, style: const TextStyle(color: _forest, fontWeight: FontWeight.w700)),
+              leading: const CircleAvatar(
+                backgroundColor: _lightGreen,
+                child: Icon(Icons.person_rounded, color: _forest),
+              ),
+              title: Text(
+                l10n.profile,
+                style: const TextStyle(
+                  color: _forest,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               onTap: () => _selectPage(9),
             ),
             ListTile(
               selected: _selectedIndex == 10,
               selectedTileColor: _lightGreen,
               leading: const Icon(Icons.settings_outlined, color: _green),
-              title: Text(l10n.settings, style: const TextStyle(color: _forest, fontWeight: FontWeight.w700)),
+              title: Text(
+                l10n.settings,
+                style: const TextStyle(
+                  color: _forest,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               onTap: () => _selectPage(10),
             ),
           ],
@@ -212,20 +334,26 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final pages = _pages(Localizations.localeOf(context).languageCode);
     return Theme(
-      data: Theme.of(context).copyWith(
+      data: AppTheme.lightTheme.copyWith(
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: Colors.white,
           indicatorColor: _lightGreen,
           height: 70,
-          labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((states) => TextStyle(
-            color: states.contains(WidgetState.selected) ? _forest : _green,
-            fontSize: 10,
-            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
-          )),
-          iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((states) => IconThemeData(
-            color: states.contains(WidgetState.selected) ? _forest : _green,
-            size: 22,
-          )),
+          labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
+            (states) => TextStyle(
+              color: states.contains(WidgetState.selected) ? _forest : _green,
+              fontSize: 10,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w800
+                  : FontWeight.w600,
+            ),
+          ),
+          iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
+            (states) => IconThemeData(
+              color: states.contains(WidgetState.selected) ? _forest : _green,
+              size: 22,
+            ),
+          ),
         ),
       ),
       child: Scaffold(
@@ -245,7 +373,10 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
                       // Reserve a dedicated menu row so the hamburger never covers
                       // screen headers, refresh buttons, titles, or controls.
                       padding: const EdgeInsets.only(top: 58),
-                      child: IndexedStack(index: _selectedIndex, children: pages),
+                      child: IndexedStack(
+                        index: _selectedIndex,
+                        children: pages,
+                      ),
                     ),
                   if (!wide)
                     PositionedDirectional(
@@ -258,8 +389,12 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
                           elevation: 2,
                           child: IconButton(
                             tooltip: l10n.openNavigation,
-                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                            icon: const Icon(Icons.menu_rounded, color: _forest),
+                            onPressed: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              color: _forest,
+                            ),
                           ),
                         ),
                       ),
@@ -274,14 +409,44 @@ class _FarmerAppShellState extends State<FarmerAppShell> {
             : SafeArea(
                 top: false,
                 child: Container(
-                  decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFE6EAE3)))),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(top: BorderSide(color: Color(0xFFE6EAE3))),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 5,
+                  ),
                   child: Row(
                     children: [
-                      _QuickNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: l10n.home, active: _selectedIndex == 0, onTap: () => _selectPage(0)),
-                      _QuickNavItem(icon: Icons.agriculture_outlined, activeIcon: Icons.agriculture_rounded, label: l10n.farms, active: _selectedIndex == 1, onTap: () => _selectPage(1)),
-                      _QuickNavItem(icon: Icons.water_drop_outlined, activeIcon: Icons.water_drop_rounded, label: l10n.irrigation, active: _selectedIndex == 2, onTap: () => _selectPage(2)),
-                      _QuickNavItem(icon: Icons.graphic_eq_rounded, activeIcon: Icons.graphic_eq_rounded, label: l10n.assistant, active: _selectedIndex == 3, onTap: () => _selectPage(3)),
+                      _QuickNavItem(
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: l10n.home,
+                        active: _selectedIndex == 0,
+                        onTap: () => _selectPage(0),
+                      ),
+                      _QuickNavItem(
+                        icon: Icons.agriculture_outlined,
+                        activeIcon: Icons.agriculture_rounded,
+                        label: l10n.farms,
+                        active: _selectedIndex == 1,
+                        onTap: () => _selectPage(1),
+                      ),
+                      _QuickNavItem(
+                        icon: Icons.water_drop_outlined,
+                        activeIcon: Icons.water_drop_rounded,
+                        label: l10n.irrigation,
+                        active: _selectedIndex == 2,
+                        onTap: () => _selectPage(2),
+                      ),
+                      _QuickNavItem(
+                        icon: Icons.graphic_eq_rounded,
+                        activeIcon: Icons.graphic_eq_rounded,
+                        label: l10n.assistant,
+                        active: _selectedIndex == 3,
+                        onTap: () => _selectPage(3),
+                      ),
                     ],
                   ),
                 ),
@@ -298,7 +463,13 @@ class _QuickNavItem extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
-  const _QuickNavItem({required this.icon, required this.activeIcon, required this.label, required this.active, required this.onTap});
+  const _QuickNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -319,12 +490,31 @@ class _QuickNavItem extends StatelessWidget {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  decoration: BoxDecoration(color: active ? _lightGreen : Colors.transparent, borderRadius: BorderRadius.circular(18)),
-                  child: Icon(active ? activeIcon : icon, color: color, size: 22),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: active ? _lightGreen : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    active ? activeIcon : icon,
+                    color: color,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(height: 3),
-                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 10, fontWeight: active ? FontWeight.w800 : FontWeight.w600)),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -468,7 +658,11 @@ class _FarmsPageState extends State<_FarmsPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _farmField(nameController, AppLocalizations.of(context)!.farmName, required: true),
+                      _farmField(
+                        nameController,
+                        AppLocalizations.of(context)!.farmName,
+                        required: true,
+                      ),
                       _farmField(
                         locationController,
                         AppLocalizations.of(context)!.location,
@@ -499,7 +693,10 @@ class _FarmsPageState extends State<_FarmsPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: _muted)),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel,
+                  style: const TextStyle(color: _muted),
+                ),
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
@@ -559,7 +756,9 @@ class _FarmsPageState extends State<_FarmsPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.farmSaveError(e.toString())),
+            content: Text(
+              AppLocalizations.of(context)!.farmSaveError(e.toString()),
+            ),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -651,14 +850,23 @@ class _FarmsPageState extends State<_FarmsPage> {
                   ? AppLocalizations.of(context)!.notSpecified
                   : '${farm.areaHectares} ${AppLocalizations.of(context)!.hectares}',
             ),
-            _farmDetail(AppLocalizations.of(context)!.soilType, farm.soilType ?? AppLocalizations.of(context)!.notSpecified),
-            _farmDetail(AppLocalizations.of(context)!.irrigationType, farm.irrigationType ?? AppLocalizations.of(context)!.notSpecified),
+            _farmDetail(
+              AppLocalizations.of(context)!.soilType,
+              farm.soilType ?? AppLocalizations.of(context)!.notSpecified,
+            ),
+            _farmDetail(
+              AppLocalizations.of(context)!.irrigationType,
+              farm.irrigationType ?? AppLocalizations.of(context)!.notSpecified,
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(AppLocalizations.of(context)!.close, style: const TextStyle(color: _forest)),
+            child: Text(
+              AppLocalizations.of(context)!.close,
+              style: const TextStyle(color: _forest),
+            ),
           ),
         ],
       ),
@@ -755,7 +963,12 @@ class _FarmsPageState extends State<_FarmsPage> {
               farm.location,
               style: const TextStyle(color: _muted, fontSize: 13),
             ),
-            trailing: Icon(Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left : Icons.chevron_right, color: _forest),
+            trailing: Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.chevron_left
+                  : Icons.chevron_right,
+              color: _forest,
+            ),
           ),
         );
       },
@@ -780,7 +993,11 @@ class _FarmsPageState extends State<_FarmsPage> {
                 ),
               )
             : const Icon(Icons.add),
-        label: Text(_saving ? AppLocalizations.of(context)!.save : AppLocalizations.of(context)!.addFarm),
+        label: Text(
+          _saving
+              ? AppLocalizations.of(context)!.save
+              : AppLocalizations.of(context)!.addFarm,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -820,7 +1037,9 @@ class _FarmsPageState extends State<_FarmsPage> {
                                 backgroundColor: _forest,
                               ),
                               icon: const Icon(Icons.refresh),
-                              label: Text(AppLocalizations.of(context)!.tryAgain),
+                              label: Text(
+                                AppLocalizations.of(context)!.tryAgain,
+                              ),
                             ),
                           ],
                         ),
@@ -868,17 +1087,23 @@ class _AssistantPage extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     CachedNetworkImage(
-                      imageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&auto=format&fit=crop&q=85',
+                      imageUrl:
+                          'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&auto=format&fit=crop&q=85',
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: const Color(0xFF315B43)),
-                      errorWidget: (_, __, ___) => Container(color: const Color(0xFF315B43)),
+                      placeholder: (_, __) =>
+                          Container(color: const Color(0xFF315B43)),
+                      errorWidget: (_, __, ___) =>
+                          Container(color: const Color(0xFF315B43)),
                     ),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.black.withValues(alpha: .12), const Color(0xFF102D23).withValues(alpha: .92)],
+                          colors: [
+                            Colors.black.withValues(alpha: .12),
+                            const Color(0xFF102D23).withValues(alpha: .92),
+                          ],
                         ),
                       ),
                     ),
@@ -889,14 +1114,42 @@ class _AssistantPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(30)),
-                            child: Text(AppLocalizations.of(context)!.fieldIntelligence, style: TextStyle(color: Colors.white, fontSize: 9, letterSpacing: 1.4, fontWeight: FontWeight.w800)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: .16),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context)!.fieldIntelligence,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                letterSpacing: 1.4,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 12),
-                          Text(AppLocalizations.of(context)!.fieldTagline, style: TextStyle(color: Colors.white, fontSize: 24, height: 1.12, fontWeight: FontWeight.w800)),
+                          Text(
+                            AppLocalizations.of(context)!.fieldTagline,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              height: 1.12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                           const SizedBox(height: 7),
-                          Text(AppLocalizations.of(context)!.fieldDescription, style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          Text(
+                            AppLocalizations.of(context)!.fieldDescription,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -906,10 +1159,20 @@ class _AssistantPage extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _VoiceAssistantCard(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DerjaVoiceScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DerjaVoiceScreen()),
+              ),
             ),
             const SizedBox(height: 22),
-            Text(AppLocalizations.of(context)!.exploreTools, style: TextStyle(color: _forest, fontSize: 19, fontWeight: FontWeight.w800)),
+            Text(
+              AppLocalizations.of(context)!.exploreTools,
+              style: TextStyle(
+                color: _forest,
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 12),
             _AssistantActionTile(
               icon: Icons.wb_sunny_rounded,
@@ -957,17 +1220,38 @@ class _VoiceAssistantCard extends StatelessWidget {
               Container(
                 width: 58,
                 height: 58,
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: _forest),
-                child: const Icon(Icons.mic_rounded, color: Colors.white, size: 27),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _forest,
+                ),
+                child: const Icon(
+                  Icons.mic_rounded,
+                  color: Colors.white,
+                  size: 27,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.of(context)!.talkToAethera, style: TextStyle(color: _forest, fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text(
+                      AppLocalizations.of(context)!.talkToAethera,
+                      style: TextStyle(
+                        color: _forest,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     SizedBox(height: 4),
-                    Text(AppLocalizations.of(context)!.voiceAssistantDescription, style: TextStyle(color: _muted, fontSize: 11, height: 1.4)),
+                    Text(
+                      AppLocalizations.of(context)!.voiceAssistantDescription,
+                      style: TextStyle(
+                        color: _muted,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -985,7 +1269,12 @@ class _AssistantActionTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  const _AssistantActionTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
+  const _AssistantActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -999,14 +1288,38 @@ class _AssistantActionTile extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           child: Row(
             children: [
-              CircleAvatar(radius: 23, backgroundColor: _lightGreen, child: Icon(icon, color: _forest)),
+              CircleAvatar(
+                radius: 23,
+                backgroundColor: _lightGreen,
+                child: Icon(icon, color: _forest),
+              ),
               const SizedBox(width: 13),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: const TextStyle(color: _forest, fontWeight: FontWeight.w800, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: _muted, fontSize: 11)),
-              ])),
-              Icon(Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded, color: _green),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: _forest,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: _muted, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Directionality.of(context) == TextDirection.rtl
+                    ? Icons.chevron_left_rounded
+                    : Icons.chevron_right_rounded,
+                color: _green,
+              ),
             ],
           ),
         ),
@@ -1023,14 +1336,25 @@ class _SettingsPage extends ConsumerWidget {
     final settings = ref.watch(appSettingsProvider);
     final l10n = AppLocalizations.of(context)!;
     final language = settings.locale.languageCode;
-    final languageLabel = language == 'fr' ? l10n.french : language == 'ar' ? l10n.arabic : l10n.english;
+    final languageLabel = language == 'fr'
+        ? l10n.french
+        : language == 'ar'
+        ? l10n.arabic
+        : l10n.english;
     return Scaffold(
       backgroundColor: _cream,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 26, 22, 36),
           children: [
-            Text(l10n.settings, style: const TextStyle(color: _forest, fontSize: 28, fontWeight: FontWeight.w900)),
+            Text(
+              l10n.settings,
+              style: const TextStyle(
+                color: _forest,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
             const SizedBox(height: 6),
             Text(l10n.preferences, style: const TextStyle(color: _muted)),
             const SizedBox(height: 24),
@@ -1041,15 +1365,24 @@ class _SettingsPage extends ConsumerWidget {
                   leading: const Icon(Icons.language_rounded, color: _green),
                   title: Text(l10n.language),
                   subtitle: Text(languageLabel),
-                  trailing: Icon(Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded),
+                  trailing: Icon(
+                    Directionality.of(context) == TextDirection.rtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
+                  ),
                   onTap: () => _chooseLanguage(context, ref, language, l10n),
                 ),
                 ListTile(
                   leading: const Icon(Icons.palette_outlined, color: _green),
                   title: Text(l10n.theme),
                   subtitle: Text(_themeLabel(settings.themeMode, l10n)),
-                  trailing: Icon(Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded),
-                  onTap: () => _chooseTheme(context, ref, settings.themeMode, l10n),
+                  trailing: Icon(
+                    Directionality.of(context) == TextDirection.rtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
+                  ),
+                  onTap: () =>
+                      _chooseTheme(context, ref, settings.themeMode, l10n),
                 ),
               ],
             ),
@@ -1066,33 +1399,62 @@ class _SettingsPage extends ConsumerWidget {
     _ => l10n.system,
   };
 
-
-  Future<void> _chooseLanguage(BuildContext context, WidgetRef ref, String current, AppLocalizations l10n) async {
+  Future<void> _chooseLanguage(
+    BuildContext context,
+    WidgetRef ref,
+    String current,
+    AppLocalizations l10n,
+  ) async {
     final selected = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(l10n.chooseLanguage),
         children: [
-          for (final entry in {'en': l10n.english, 'fr': l10n.french, 'ar': l10n.arabic}.entries)
-            RadioListTile<String>(value: entry.key, groupValue: current, title: Text(entry.value), onChanged: (value) => Navigator.pop(ctx, value)),
+          for (final entry in {
+            'en': l10n.english,
+            'fr': l10n.french,
+            'ar': l10n.arabic,
+          }.entries)
+            RadioListTile<String>(
+              value: entry.key,
+              groupValue: current,
+              title: Text(entry.value),
+              onChanged: (value) => Navigator.pop(ctx, value),
+            ),
         ],
       ),
     );
-    if (selected != null) await ref.read(appSettingsProvider.notifier).setLanguage(selected);
+    if (selected != null)
+      await ref.read(appSettingsProvider.notifier).setLanguage(selected);
   }
 
-  Future<void> _chooseTheme(BuildContext context, WidgetRef ref, ThemeMode current, AppLocalizations l10n) async {
+  Future<void> _chooseTheme(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode current,
+    AppLocalizations l10n,
+  ) async {
     final selected = await showDialog<ThemeMode>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(l10n.chooseTheme),
         children: [
-          for (final entry in [(ThemeMode.system, l10n.system), (ThemeMode.light, l10n.light), (ThemeMode.dark, l10n.dark)])
-            RadioListTile<ThemeMode>(value: entry.$1, groupValue: current, title: Text(entry.$2), onChanged: (value) => Navigator.pop(ctx, value)),
+          for (final entry in [
+            (ThemeMode.system, l10n.system),
+            (ThemeMode.light, l10n.light),
+            (ThemeMode.dark, l10n.dark),
+          ])
+            RadioListTile<ThemeMode>(
+              value: entry.$1,
+              groupValue: current,
+              title: Text(entry.$2),
+              onChanged: (value) => Navigator.pop(ctx, value),
+            ),
         ],
       ),
     );
-    if (selected != null) await ref.read(appSettingsProvider.notifier).setTheme(selected);
+    if (selected != null)
+      await ref.read(appSettingsProvider.notifier).setTheme(selected);
   }
 }
 
@@ -1105,10 +1467,23 @@ class _SettingsGroup extends StatelessWidget {
     color: Colors.white,
     elevation: 0,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.fromLTRB(18, 16, 18, 4), child: Text(title, style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 12))),
-      ...children,
-    ]),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: _green,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        ...children,
+      ],
+    ),
   );
 }
 
@@ -1175,7 +1550,10 @@ class _ProfilePage extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text(AppLocalizations.of(context)!.close, style: const TextStyle(color: _forest)),
+              child: Text(
+                AppLocalizations.of(context)!.close,
+                style: const TextStyle(color: _forest),
+              ),
             ),
           ],
         ),
@@ -1250,7 +1628,10 @@ class _ProfilePage extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 4),
-                  Text(l10n.farmerAccount, style: const TextStyle(color: _muted)),
+                  Text(
+                    l10n.farmerAccount,
+                    style: const TextStyle(color: _muted),
+                  ),
                 ],
               ),
             ),
@@ -1275,10 +1656,7 @@ class _ProfilePage extends ConsumerWidget {
               Icons.help_outline,
               l10n.helpSupport,
               context: context,
-              onTap: () => showInfo(
-                l10n.helpSupport,
-                l10n.helpSupportMessage,
-              ),
+              onTap: () => showInfo(l10n.helpSupport, l10n.helpSupportMessage),
             ),
             _profileItem(
               Icons.logout_rounded,
@@ -1341,7 +1719,12 @@ class _ProfilePage extends ConsumerWidget {
               style: const TextStyle(color: _muted, fontSize: 12),
             ),
           const SizedBox(width: 8),
-          Icon(Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left : Icons.chevron_right, color: _muted),
+          Icon(
+            Directionality.of(context) == TextDirection.rtl
+                ? Icons.chevron_left
+                : Icons.chevron_right,
+            color: _muted,
+          ),
         ],
       ),
     );

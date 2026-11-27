@@ -15,7 +15,7 @@ AETHERA connects farmers, agricultural experts, farm records, weather informatio
 ## 1. Requirements
 
 - Docker Desktop with Docker Compose.
-- Flutter SDK installed on Windows. Its bundled Dart SDK must satisfy `app/pubspec.yaml` (`^3.13.5` or newer within Dart 3.x).
+- Flutter SDK installed on Windows. Its bundled Dart SDK must satisfy `app/pubspec.yaml` (`^3.10.0` or newer within Dart 3.x).
 - VS Code with the Flutter and Dart extensions.
 
 Verify the local SDK in PowerShell:
@@ -142,7 +142,7 @@ uvicorn app.main:app --reload
 
 ## Firebase note
 
-The Flutter client contains Firebase client configuration. Firebase sign-in requires the matching Firebase project configuration and enabled providers. Backend verification additionally requires Firebase Admin credentials. Never commit service-account JSON files.
+The Flutter client contains Firebase client configuration. Firebase sign-in requires the matching Firebase project configuration and enabled providers. For Docker, place the Firebase Admin service-account file at `backend/secrets/firebase-adminsdk.json` and restart the backend. Never commit service-account JSON files; this directory is mounted read-only and secret JSON files are ignored by Git and Docker builds.
 
 ## Weather service
 
@@ -155,7 +155,7 @@ Forecast responses are cached in-process for 10 minutes. Agricultural notes are 
 
 ## Scope and verification
 
-- No AI model weights are bundled. Assistant, safety, retrieval, irrigation, expert review, and voice demo code are included; provider-backed generation requires its optional configuration.
+- No AI model weights are bundled. The app's voice and text questions call the authenticated backend assistant. Set `ASSISTANT_PROVIDER=groq` and `GROQ_API_KEY` in the root `.env` for live model replies; otherwise the backend uses its local stub. Safety checks run before a question is sent to the model, and risky questions can be routed to expert review.
 - The main voice pipeline is available at `ai/voice/voice_pipeline.py`; its recorded response clips are demo assets.
 - Run `flutter pub get`, `flutter analyze`, and the backend tests locally before deployment. These commands have not been executed as part of packaging this archive.
 - Review Firebase restrictions, CORS origins and production secrets before public deployment.
@@ -184,3 +184,6 @@ On the first backend startup, the development configuration creates a verified f
 - Role: `farmer`
 
 The seed is idempotent: it does not overwrite an existing account or reset its password. Change the values with `DEMO_ACCOUNT_EMAIL`, `DEMO_ACCOUNT_PASSWORD`, and `DEMO_ACCOUNT_NAME` in the root `.env` before the first startup. Set `DEMO_ACCOUNT_ENABLED=false` before any public deployment. These credentials are for local testing only.
+Add a farm from the app's **Farms** page before using the farm-specific assistant.
+
+If the local admin account returns “Invalid email or password”, reset it from the project terminal with `docker compose exec -it backend python reset_admin_password.py`. The command asks for the existing admin email and a new password without echoing the password.

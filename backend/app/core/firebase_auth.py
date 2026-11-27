@@ -4,7 +4,7 @@ from typing import Any
 
 from firebase_admin import auth
 
-from app.core.firebase import get_firebase_app
+from app.core.firebase import FirebaseConfigurationError, get_firebase_app
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,8 @@ def verify_firebase_id_token(id_token: str) -> dict[str, Any]:
 
         return decoded_token
 
+    except FirebaseConfigurationError:
+        raise
     except Exception as exc:
         # Log the underlying error for debugging.
         # Never log the actual authentication token.

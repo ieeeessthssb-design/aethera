@@ -1263,6 +1263,492 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Farm location saved.'**
   String get weatherLocationSaved;
+
+  /// No description provided for @authTitleWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get authTitleWelcome;
+
+  /// No description provided for @authTitleCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get authTitleCreate;
+
+  /// No description provided for @authTitleVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get authTitleVerify;
+
+  /// No description provided for @authSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your smart agriculture platform.'**
+  String get authSubtitle;
+
+  /// No description provided for @authVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the six-digit code sent to your email.'**
+  String get authVerifyHint;
+
+  /// No description provided for @authCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get authCodeLabel;
+
+  /// No description provided for @authCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the six-digit code.'**
+  String get authCodeInvalid;
+
+  /// No description provided for @authResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend verification code'**
+  String get authResend;
+
+  /// No description provided for @authNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get authNameLabel;
+
+  /// No description provided for @authNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name.'**
+  String get authNameRequired;
+
+  /// No description provided for @authAccountType.
+  ///
+  /// In en, this message translates to:
+  /// **'Account type'**
+  String get authAccountType;
+
+  /// No description provided for @authChooseRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose account type'**
+  String get authChooseRole;
+
+  /// No description provided for @authFarmer.
+  ///
+  /// In en, this message translates to:
+  /// **'Farmer'**
+  String get authFarmer;
+
+  /// No description provided for @authExpert.
+  ///
+  /// In en, this message translates to:
+  /// **'Expert'**
+  String get authExpert;
+
+  /// No description provided for @authEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get authEmailLabel;
+
+  /// No description provided for @authEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get authEmailInvalid;
+
+  /// No description provided for @authPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPasswordLabel;
+
+  /// No description provided for @authPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password.'**
+  String get authPasswordRequired;
+
+  /// No description provided for @authPasswordLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 12 characters.'**
+  String get authPasswordLength;
+
+  /// No description provided for @authTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the terms and privacy policy.'**
+  String get authTerms;
+
+  /// No description provided for @authVerifyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'VERIFY EMAIL'**
+  String get authVerifyButton;
+
+  /// No description provided for @authCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATE ACCOUNT'**
+  String get authCreateButton;
+
+  /// No description provided for @authSignInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN IN'**
+  String get authSignInButton;
+
+  /// No description provided for @authDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get authDivider;
+
+  /// No description provided for @authGoogleButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get authGoogleButton;
+
+  /// No description provided for @authSwitchSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Sign in'**
+  String get authSwitchSignIn;
+
+  /// No description provided for @authSwitchSignUp.
+  ///
+  /// In en, this message translates to:
+  /// **'New to AETHERA? Create an account'**
+  String get authSwitchSignUp;
+
+  /// No description provided for @adminHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin dashboard'**
+  String get adminHeader;
+
+  /// No description provided for @adminOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform overview'**
+  String get adminOverview;
+
+  /// No description provided for @adminTotalUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Total users'**
+  String get adminTotalUsers;
+
+  /// No description provided for @adminActiveUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Active users'**
+  String get adminActiveUsers;
+
+  /// No description provided for @adminFarmers.
+  ///
+  /// In en, this message translates to:
+  /// **'Farmers'**
+  String get adminFarmers;
+
+  /// No description provided for @adminExperts.
+  ///
+  /// In en, this message translates to:
+  /// **'Experts'**
+  String get adminExperts;
+
+  /// No description provided for @adminPendingExperts.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending experts'**
+  String get adminPendingExperts;
+
+  /// No description provided for @adminApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'Expert applications'**
+  String get adminApplications;
+
+  /// No description provided for @adminNoApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'No expert applications need review.'**
+  String get adminNoApplications;
+
+  /// No description provided for @adminUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'User accounts'**
+  String get adminUsers;
+
+  /// No description provided for @adminNoUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No user accounts found.'**
+  String get adminNoUsers;
+
+  /// No description provided for @adminApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get adminApprove;
+
+  /// No description provided for @adminReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get adminReject;
+
+  /// No description provided for @adminUserActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get adminUserActive;
+
+  /// No description provided for @adminUserInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get adminUserInactive;
+
+  /// No description provided for @adminLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get adminLogout;
+
+  /// No description provided for @adminLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the admin dashboard.'**
+  String get adminLoadFailed;
+
+  /// No description provided for @adminRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get adminRetry;
+
+  /// No description provided for @adminRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get adminRoleAdmin;
+
+  /// No description provided for @adminStatusUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status updated.'**
+  String get adminStatusUpdated;
+
+  /// No description provided for @diagnosisTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop diagnosis'**
+  String get diagnosisTitle;
+
+  /// No description provided for @diagnosisRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh cases'**
+  String get diagnosisRefresh;
+
+  /// No description provided for @diagnosisLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your data. Check your connection and try again.'**
+  String get diagnosisLoadError;
+
+  /// No description provided for @diagnosisPhotoError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the photo.'**
+  String get diagnosisPhotoError;
+
+  /// No description provided for @diagnosisAddFarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Please add a farm first.'**
+  String get diagnosisAddFarm;
+
+  /// No description provided for @diagnosisSelectPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a crop photo.'**
+  String get diagnosisSelectPhoto;
+
+  /// No description provided for @diagnosisDescribeSymptoms.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the symptoms in a little more detail.'**
+  String get diagnosisDescribeSymptoms;
+
+  /// No description provided for @diagnosisNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New crop diagnosis'**
+  String get diagnosisNew;
+
+  /// No description provided for @diagnosisInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a photo and symptoms to an agricultural expert.'**
+  String get diagnosisInstructions;
+
+  /// No description provided for @diagnosisSelectFarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your farm'**
+  String get diagnosisSelectFarm;
+
+  /// No description provided for @diagnosisChoosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose crop photo'**
+  String get diagnosisChoosePhoto;
+
+  /// No description provided for @diagnosisChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get diagnosisChangePhoto;
+
+  /// No description provided for @diagnosisSymptoms.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the symptoms'**
+  String get diagnosisSymptoms;
+
+  /// No description provided for @diagnosisSymptomExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: yellow spots on leaves, wilting...'**
+  String get diagnosisSymptomExample;
+
+  /// No description provided for @diagnosisSubmitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting...'**
+  String get diagnosisSubmitting;
+
+  /// No description provided for @diagnosisSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for expert review'**
+  String get diagnosisSubmit;
+
+  /// No description provided for @diagnosisFarmRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a farm in the Farms tab before submitting a diagnosis.'**
+  String get diagnosisFarmRequired;
+
+  /// No description provided for @diagnosisCaseSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Case submitted! An expert can now review it.'**
+  String get diagnosisCaseSubmitted;
+
+  /// No description provided for @diagnosisSubmissionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Submission failed: {error}'**
+  String diagnosisSubmissionFailed(String error);
+
+  /// No description provided for @diagnosisServerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error ({status})'**
+  String diagnosisServerError(String status);
+
+  /// No description provided for @diagnosisPendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending expert review'**
+  String get diagnosisPendingStatus;
+
+  /// No description provided for @diagnosisValidatedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Validated by expert'**
+  String get diagnosisValidatedStatus;
+
+  /// No description provided for @diagnosisRejectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected / needs further review'**
+  String get diagnosisRejectedStatus;
+
+  /// No description provided for @diagnosisExpertDiagnosis.
+  ///
+  /// In en, this message translates to:
+  /// **'Expert diagnosis'**
+  String get diagnosisExpertDiagnosis;
+
+  /// No description provided for @diagnosisExpertRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Expert recommendation'**
+  String get diagnosisExpertRecommendation;
+
+  /// No description provided for @diagnosisSubmittedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted: {time}'**
+  String diagnosisSubmittedAt(String time);
+
+  /// No description provided for @diagnosisMyCases.
+  ///
+  /// In en, this message translates to:
+  /// **'My diagnosis cases'**
+  String get diagnosisMyCases;
+
+  /// No description provided for @diagnosisCasesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your submissions and expert feedback.'**
+  String get diagnosisCasesDescription;
+
+  /// No description provided for @diagnosisNoCases.
+  ///
+  /// In en, this message translates to:
+  /// **'No diagnosis cases yet.'**
+  String get diagnosisNoCases;
+
+  /// No description provided for @diagnosisRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get diagnosisRetry;
+
+  /// No description provided for @authInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password is incorrect.'**
+  String get authInvalidCredentials;
+
+  /// No description provided for @authGoogleConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in is not configured on the server. Add Firebase Admin credentials and restart the API.'**
+  String get authGoogleConfiguration;
+
+  /// No description provided for @authGoogleInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in could not be verified. Check the Firebase project configuration.'**
+  String get authGoogleInvalid;
+
+  /// No description provided for @authConnectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect. Please try again.'**
+  String get authConnectionError;
 }
 
 class _AppLocalizationsDelegate

@@ -45,6 +45,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   bool get isSignUp => _mode == AuthMode.signUp;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreSession());
+  }
+
+  Future<void> _restoreSession() async {
+    final token = await ref.read(tokenStorageProvider).getAccessToken();
+    if (token == null || token.isEmpty || !mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final user = await _authApi.getProfile();
+      if (mounted) await _openDashboard({'user': user});
+    } catch (_) {
+      // Keep the sign-in form available when offline; the stored refresh token
+      // can still restore the session once the API is reachable.
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   String get language {
     final code = Localizations.localeOf(context).languageCode;
     if (code == 'fr' || code == 'ar') return code;
@@ -96,11 +117,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       _showMessage(error.message ?? 'Google authentication failed.');
     } on DioException catch (error) {
       final data = error.response?.data;
+      final status = error.response?.statusCode;
 
       _showMessage(
-        data is Map
-            ? data['detail']?.toString() ?? 'Google sign-in failed.'
-            : 'Google sign-in failed.',
+        status == 503
+            ? AppLocalizations.of(context)!.authGoogleConfiguration
+            : status == 401
+                ? AppLocalizations.of(context)!.authGoogleInvalid
+                : data is Map
+                    ? data['detail']?.toString() ??
+                        AppLocalizations.of(context)!.authGoogleError
+                    : AppLocalizations.of(context)!.authGoogleError,
       );
     } catch (error) {
       _showMessage(AppLocalizations.of(context)!.authGoogleError);
@@ -233,11 +260,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       }
     } on DioException catch (error) {
       final data = error.response?.data;
-      final message =
-          data is Map ? data['detail']?.toString() : null;
+      final message = error.response?.statusCode == 401
+          ? AppLocalizations.of(context)!.authInvalidCredentials
+          : data is Map
+              ? data['detail']?.toString()
+              : null;
 
       _showMessage(
-        message ?? 'Unable to connect. Please try again.',
+        message ?? AppLocalizations.of(context)!.authConnectionError,
       );
     } catch (error) {
       _showMessage(
@@ -302,6 +332,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Widget _buildFormCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -315,10 +346,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           children: [
             Text(
               _awaitingEmailVerification
-                  ? 'Verify your email'
+                  ? l10n.authTitleVerify
                   : isSignUp
-                      ? 'Create your account'
-                      : 'Welcome back',
+                      ? l10n.authTitleCreate
+                      : l10n.authTitleWelcome,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: forestGreen,
@@ -329,8 +360,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const SizedBox(height: 8),
             Text(
               _awaitingEmailVerification
-                  ? 'Enter the six-digit code sent to your email.'
-                  : 'Your smart agriculture platform.',
+                  ? l10n.authVerifyHint
+                  : l10n.authSubtitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF65736A),
@@ -342,13 +373,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             if (_awaitingEmailVerification) ...[
               _field(
                 controller: _codeController,
-                label: 'Verification code',
+                label: l10n.authCodeLabel,
                 icon: Icons.verified_outlined,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null ||
                       !RegExp(r'^\d{6}$').hasMatch(value.trim())) {
-                    return 'Enter the six-digit code.';
+                    return l10n.authCodeInvalid;
                   }
                   return null;
                 },
@@ -380,8 +411,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           }
                         }
                       },
-                child: const Text(
-                  'Resend verification code',
+                child: Text(
+                  l10n.authResend,
                   style: TextStyle(color: forestGreen),
                 ),
               ),
@@ -389,17 +420,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               if (isSignUp) ...[
                 _field(
                   controller: _nameController,
-                  label: 'Full name',
+                  label: l10n.authNameLabel,
                   icon: Icons.person_outline,
                   validator: (value) =>
                       value == null || value.trim().isEmpty
-                          ? 'Enter your full name.'
+                          ? l10n.authNameRequired
                           : null,
                 ),
                 const SizedBox(height: 15),
-                const Text(
-                  'Account type',
-                  style: TextStyle(
+                Text(
+                  l10n.authAccountType,
+                  style: const TextStyle(
                     color: forestGreen,
                     fontWeight: FontWeight.bold,
                   ),
@@ -415,22 +446,22 @@ DropdownButtonFormField<String>(
     fontSize: 16,
   ),
   decoration: _inputDecoration(
-    label: 'Choose account type',
+    label: l10n.authChooseRole,
     icon: Icons.badge_outlined,
   ),
-  items: const [
+  items: [
     DropdownMenuItem(
       value: 'farmer',
       child: Text(
-        'Farmer',
-        style: TextStyle(color: inputTextColor),
+        l10n.authFarmer,
+        style: const TextStyle(color: inputTextColor),
       ),
     ),
     DropdownMenuItem(
       value: 'expert',
       child: Text(
-        'Expert',
-        style: TextStyle(color: inputTextColor),
+        l10n.authExpert,
+        style: const TextStyle(color: inputTextColor),
       ),
     ),
   ],
@@ -444,14 +475,14 @@ DropdownButtonFormField<String>(
               ],
               _field(
                 controller: _emailController,
-                label: 'Email address',
+                label: l10n.authEmailLabel,
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null ||
                       !RegExp(r'^[^@]+@[^@]+\.[^@]+$')
                           .hasMatch(value.trim())) {
-                    return 'Enter a valid email address.';
+                    return l10n.authEmailInvalid;
                   }
                   return null;
                 },
@@ -459,7 +490,7 @@ DropdownButtonFormField<String>(
               const SizedBox(height: 15),
               _field(
                 controller: _passwordController,
-                label: 'Password',
+                label: l10n.authPasswordLabel,
                 icon: Icons.lock_outline,
                 obscureText: _obscurePassword,
                 suffix: IconButton(
@@ -477,10 +508,10 @@ DropdownButtonFormField<String>(
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Enter your password.';
+                    return l10n.authPasswordRequired;
                   }
                   if (isSignUp && value.length < 12) {
-                    return 'Use at least 12 characters.';
+                    return l10n.authPasswordLength;
                   }
                   return null;
                 },
@@ -490,9 +521,9 @@ DropdownButtonFormField<String>(
                   contentPadding: EdgeInsets.zero,
                   value: _acceptedTerms,
                   activeColor: forestGreen,
-                  title: const Text(
-                    'I agree to the terms and privacy policy.',
-                    style: TextStyle(
+                  title: Text(
+                    l10n.authTerms,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: inputTextColor,
                     ),
@@ -526,10 +557,10 @@ DropdownButtonFormField<String>(
                       )
                     : Text(
                         _awaitingEmailVerification
-                            ? 'VERIFY EMAIL'
+                            ? l10n.authVerifyButton
                             : isSignUp
-                                ? 'CREATE ACCOUNT'
-                                : 'SIGN IN',
+                                ? l10n.authCreateButton
+                                : l10n.authSignInButton,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
@@ -546,7 +577,7 @@ DropdownButtonFormField<String>(
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      'OR',
+                      l10n.authDivider,
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.bold,
@@ -564,9 +595,9 @@ DropdownButtonFormField<String>(
                   size: 30,
                   color: Colors.black,
                 ),
-                label: const Text(
-                  'Continue with Google',
-                  style: TextStyle(
+                label: Text(
+                  l10n.authGoogleButton,
+                  style: const TextStyle(
                     color: inputTextColor,
                     fontWeight: FontWeight.w600,
                   ),
@@ -592,8 +623,8 @@ DropdownButtonFormField<String>(
                   : _switchMode,
               child: Text(
                 isSignUp
-                    ? 'Already have an account? Sign in'
-                    : 'New to AETHERA? Create an account',
+                    ? l10n.authSwitchSignIn
+                    : l10n.authSwitchSignUp,
                 style: const TextStyle(
                   color: forestGreen,
                   fontWeight: FontWeight.bold,

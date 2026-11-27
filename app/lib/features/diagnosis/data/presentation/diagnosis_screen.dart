@@ -4,10 +4,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../farmer/presentation/farm_api_service.dart';
 import '../diagnosis_api_service.dart';
 
 const _forest = Color(0xFF183F32);
+const _ink = Color(0xFF24352C);
 const _green = Color(0xFF527B58);
 const _cream = Color(0xFFF7F6EF);
 
@@ -69,7 +71,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Could not load your data. Check your connection and retry.';
+        _error = AppLocalizations.of(context)!.diagnosisLoadError;
       });
     }
   }
@@ -92,23 +94,24 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         _photoBytes = bytes;
       });
     } catch (e) {
-      _showMessage('Could not open the photo: $e');
+      _showMessage(AppLocalizations.of(context)!.diagnosisPhotoError);
     }
   }
 
   Future<void> _submit() async {
     final symptoms = _symptomsController.text.trim();
+    final l10n = AppLocalizations.of(context)!;
 
     if (_farmId == null) {
-      _showMessage('Please add a farm first.');
+      _showMessage(l10n.diagnosisAddFarm);
       return;
     }
     if (_photo == null) {
-      _showMessage('Please select a crop photo.');
+      _showMessage(l10n.diagnosisSelectPhoto);
       return;
     }
     if (symptoms.length < 5) {
-      _showMessage('Please describe the symptoms in a little more detail.');
+      _showMessage(l10n.diagnosisDescribeSymptoms);
       return;
     }
 
@@ -131,11 +134,11 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         _submitting = false;
       });
 
-      _showMessage('Case submitted! An expert can now review it.');
+      _showMessage(l10n.diagnosisCaseSubmitted);
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      _showMessage('Submission failed: ${_errorMessage(e)}');
+      _showMessage(l10n.diagnosisSubmissionFailed(_errorMessage(e)));
     }
   }
 
@@ -145,25 +148,29 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       if (data is Map && data['detail'] != null) {
         return data['detail'].toString();
       }
-      return 'Server error (${error.response?.statusCode ?? 'connection'})';
+      return AppLocalizations.of(context)!.diagnosisServerError(
+        error.response?.statusCode?.toString() ?? 'connection',
+      );
     }
     return error.toString();
   }
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _statusLabel(String status) {
+    final l10n = AppLocalizations.of(context)!;
     switch (status) {
       case 'pending_review':
-        return 'Pending expert review';
+        return l10n.diagnosisPendingStatus;
       case 'validated':
-        return 'Validated by expert';
+        return l10n.diagnosisValidatedStatus;
       case 'rejected':
-        return 'Rejected / needs further review';
+        return l10n.diagnosisRejectedStatus;
       default:
         return status.replaceAll('_', ' ');
     }
@@ -202,6 +209,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   }
 
   Widget _buildSubmissionForm() {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       color: Colors.white,
       elevation: 1,
@@ -211,15 +219,12 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _sectionTitle(
-              'New crop diagnosis',
-              'Send a photo and symptoms to an agricultural expert.',
-            ),
+            _sectionTitle(l10n.diagnosisNew, l10n.diagnosisInstructions),
             DropdownButtonFormField<String>(
               initialValue: _farmId,
               isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Select your farm',
+              decoration: InputDecoration(
+                labelText: l10n.diagnosisSelectFarm,
                 border: OutlineInputBorder(),
               ),
               items: _farms.map((farm) {
@@ -238,7 +243,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               onPressed: _submitting ? null : _pickPhoto,
               icon: const Icon(Icons.add_a_photo_outlined),
               label: Text(
-                _photo == null ? 'Choose crop photo' : 'Change photo',
+                _photo == null
+                    ? l10n.diagnosisChoosePhoto
+                    : l10n.diagnosisChangePhoto,
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _forest,
@@ -261,9 +268,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               controller: _symptomsController,
               minLines: 3,
               maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Describe the symptoms',
-                hintText: 'Example: yellow spots on leaves, wilting...',
+              decoration: InputDecoration(
+                labelText: l10n.diagnosisSymptoms,
+                hintText: l10n.diagnosisSymptomExample,
                 border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
@@ -282,7 +289,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                     )
                   : const Icon(Icons.send_rounded),
               label: Text(
-                _submitting ? 'Submitting...' : 'Submit for expert review',
+                _submitting ? l10n.diagnosisSubmitting : l10n.diagnosisSubmit,
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: _forest,
@@ -291,11 +298,11 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               ),
             ),
             if (_farms.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 10),
                 child: Text(
-                  'Add a farm in the Farms tab before submitting a diagnosis.',
-                  style: TextStyle(color: Colors.deepOrange),
+                  l10n.diagnosisFarmRequired,
+                  style: const TextStyle(color: Colors.deepOrange),
                 ),
               ),
           ],
@@ -305,6 +312,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   }
 
   Widget _buildCaseCard(DiagnosisCase item) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 10),
@@ -332,26 +340,34 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
             Text(item.symptoms, style: const TextStyle(color: _forest)),
             if (item.expertDiagnosis != null) ...[
               const Divider(height: 22),
-              const Text(
-                'Expert diagnosis',
-                style: TextStyle(fontWeight: FontWeight.bold, color: _forest),
+              Text(
+                l10n.diagnosisExpertDiagnosis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _forest,
+                ),
               ),
               const SizedBox(height: 5),
-              Text(item.expertDiagnosis!),
+              Text(item.expertDiagnosis!, style: const TextStyle(color: _ink)),
             ],
             if (item.expertAdvice != null) ...[
               const SizedBox(height: 12),
-              const Text(
-                'Expert recommendation',
-                style: TextStyle(fontWeight: FontWeight.bold, color: _forest),
+              Text(
+                l10n.diagnosisExpertRecommendation,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _forest,
+                ),
               ),
               const SizedBox(height: 5),
-              Text(item.expertAdvice!),
+              Text(item.expertAdvice!, style: const TextStyle(color: _ink)),
             ],
             if (item.createdAt != null) ...[
               const SizedBox(height: 10),
               Text(
-                'Submitted: ${item.createdAt!.toLocal().toString().substring(0, 16)}',
+                l10n.diagnosisSubmittedAt(
+                  item.createdAt!.toLocal().toString().substring(0, 16),
+                ),
                 style: const TextStyle(color: Colors.grey, fontSize: 11),
               ),
             ],
@@ -363,17 +379,18 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: _cream,
       appBar: AppBar(
-        title: const Text('Crop diagnosis'),
+        title: Text(l10n.diagnosisTitle),
         backgroundColor: _forest,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
             onPressed: _loadData,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh cases',
+            tooltip: l10n.diagnosisRefresh,
           ),
         ],
       ),
@@ -390,7 +407,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: _loadData,
-                      child: const Text('Retry'),
+                      child: Text(l10n.diagnosisRetry),
                     ),
                   ],
                 ),
@@ -404,16 +421,16 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   _buildSubmissionForm(),
                   const SizedBox(height: 24),
                   _sectionTitle(
-                    'My diagnosis cases',
-                    'Track your submissions and expert feedback.',
+                    l10n.diagnosisMyCases,
+                    l10n.diagnosisCasesDescription,
                   ),
                   if (_cases.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 25),
                       child: Center(
                         child: Text(
-                          'No diagnosis cases yet.',
-                          style: TextStyle(color: Colors.grey),
+                          l10n.diagnosisNoCases,
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ),
                     )

@@ -38,7 +38,7 @@ services:
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
-      FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase-admin/firebase-adminsdk.json
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:4200,http://localhost:8080}
       ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-stub}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -64,6 +64,7 @@ services:
         condition: service_healthy
     volumes:
       - backend_uploads:/srv/aethera/backend/uploads
+      - ./backend/secrets:/run/secrets/firebase-admin:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
       interval: 15s

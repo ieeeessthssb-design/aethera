@@ -11,9 +11,13 @@ from typing import Optional, List
 from dataclasses import dataclass
 import json
 import uuid
+import logging
 
 from app.core.config import settings
 from app.services import safety
+import httpx
+
+logger = logging.getLogger(__name__)
 
 
 # High-risk topics always escalate to an expert regardless of confidence
@@ -221,11 +225,82 @@ class StubAssistantService(AssistantInterface):
         return case.id
 
 
+class GroqAssistantService(AssistantInterface):
+    """OpenAI-compatible Groq chat provider, guarded by the same offline safety rules."""
+
+    async def answer(self, message: str, farm, user, db) -> AssistantResult:
+        # Refusals happen before any request leaves the backend.
+        verdict = safety.evaluate_message(message)
+        fallback = StubAssistantService()
+        if verdict.refuse:
+            case_id = await fallback._create_expert_case(
+                message, verdict.reply or "", 0.0, [], farm, user, db
+            )
+            return AssistantResult(
+                answer=verdict.reply or "", confidence=0.0, sources=[],
+                escalated=True, case_id=case_id,
+            )
+
+        context = [
+            f"Farm: {farm.name}" if farm else "Farm: not provided",
+            f"Location: {farm.location}" if farm else "",
+            f"Crop: {farm.crop}" if farm and farm.crop else "",
+            f"Soil: {farm.soil_type}" if farm and farm.soil_type else "",
+        ]
+        system_prompt = (
+            "You are AETHERA, an agricultural assistant for farmers in Tunisia. "
+            "Answer in the same language as the farmer (Arabic, French, or English). "
+            "Be practical, concise, and clear about uncertainty. Never invent farm measurements. "
+            "Do not provide pesticide or fertilizer dosages, mixing instructions, or spray schedules. "
+            "For disease or pest diagnosis, advise safe observation and recommend expert review. "
+            "Farm context:\n" + "\n".join(item for item in context if item)
+        )
+        try:
+            async with httpx.AsyncClient(timeout=35) as client:
+                response = await client.post(
+                    f"{settings.groq_base_url.rstrip('/')}/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+                    json={
+                        "model": settings.groq_model,
+                        "temperature": 0.2,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": message},
+                        ],
+                    },
+                )
+                response.raise_for_status()
+                answer = response.json()["choices"][0]["message"]["content"].strip()
+                if not answer:
+                    raise ValueError("The assistant returned an empty response.")
+        except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as error:
+            # Keep the application usable when the optional provider is down.
+            logger.warning(
+                "Groq assistant request failed (%s); using local stub response.",
+                type(error).__name__,
+            )
+            return await fallback.answer(message, farm, user, db)
+
+        should_escalate = verdict.escalate
+        sources = ["Groq AI"]
+        case_id = None
+        confidence = 0.65
+        if should_escalate:
+            case_id = await fallback._create_expert_case(
+                message, answer, confidence, sources, farm, user, db
+            )
+        answer = safety.finalize_answer(answer, should_escalate, verdict.language)
+        return AssistantResult(
+            answer=answer, confidence=confidence, sources=sources,
+            escalated=should_escalate, case_id=case_id,
+        )
+
+
 def get_assistant_service() -> AssistantInterface:
     """Factory function: returns the appropriate assistant implementation."""
     provider = settings.assistant_provider.lower()
     if provider == "stub":
         return StubAssistantService()
-    # Future: elif provider == "openai": return OpenAIAssistantService()
-    # Future: elif provider == "groq": return GroqAssistantService()
+    if provider == "groq" and settings.groq_api_key.strip():
+        return GroqAssistantService()
     return StubAssistantService()  # Fallback

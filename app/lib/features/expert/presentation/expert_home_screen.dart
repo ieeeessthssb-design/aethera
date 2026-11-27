@@ -14,7 +14,7 @@ class ExpertHomeScreen extends ConsumerWidget {
 
   static const forest = Color(0xFF183F32);
   static const cream = Color(0xFFF7F6EF);
-  static const muted = Color(0xFF849087);
+  static const muted = Color(0xFF526158);
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(

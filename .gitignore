@@ -8,6 +8,7 @@
 /env
 /backend/env
 **/*service-account*.json
+backend/secrets/*.json
 *.key
 
 # Python
@@ -59,6 +60,8 @@ ai/retrieval/docs/*
 !ai/retrieval/docs/.gitkeep
 ai/stt/audio/
 data/
+!app/lib/features/assistant/data/
+!app/lib/features/assistant/data/**
 models/
 backup_models/
 final_probe_convnext/

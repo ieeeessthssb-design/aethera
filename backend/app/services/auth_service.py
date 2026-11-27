@@ -11,6 +11,7 @@ from app.core.refresh_tokens import generate_refresh_token, hash_refresh_token
 from app.core.security import hash_password, verify_password
 from app.core.tokens import create_access_token
 from app.core.firebase_auth import (
+    FirebaseConfigurationError,
     FirebaseTokenError,
     verify_phone_identity,
     verify_google_identity,
@@ -85,6 +86,10 @@ class GoogleAccountAlreadyExists(Exception):
 
 
 class InvalidGoogleAuthentication(Exception):
+    pass
+
+
+class GoogleAuthenticationNotConfigured(Exception):
     pass
 
 
@@ -497,6 +502,8 @@ async def authenticate_google_user(
 ) -> tuple[User, str, str]:
     try:
         google_identity = verify_google_identity(firebase_id_token)
+    except FirebaseConfigurationError:
+        raise GoogleAuthenticationNotConfigured() from None
     except FirebaseTokenError:
         raise InvalidGoogleAuthentication() from None
 

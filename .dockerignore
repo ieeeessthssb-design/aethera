@@ -17,6 +17,7 @@
 /env
 /backend/env
 **/*service-account*.json
+backend/secrets/*.json
 *.db
 backend/.venv/
 backend/venv/

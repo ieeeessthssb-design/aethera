@@ -206,5 +206,107 @@
   "dashboardStale": "Stale",
   "dashboardUnknown": "Unknown",
   "dashboardDisabled": "Disabled",
-  "weatherLocationSaved": "Farm location saved."
+  "weatherLocationSaved": "Farm location saved.",
+  "authTitleWelcome": "Welcome back",
+  "authTitleCreate": "Create your account",
+  "authTitleVerify": "Verify your email",
+  "authSubtitle": "Your smart agriculture platform.",
+  "authVerifyHint": "Enter the six-digit code sent to your email.",
+  "authCodeLabel": "Verification code",
+  "authCodeInvalid": "Enter the six-digit code.",
+  "authResend": "Resend verification code",
+  "authNameLabel": "Full name",
+  "authNameRequired": "Enter your full name.",
+  "authAccountType": "Account type",
+  "authChooseRole": "Choose account type",
+  "authFarmer": "Farmer",
+  "authExpert": "Expert",
+  "authEmailLabel": "Email address",
+  "authEmailInvalid": "Enter a valid email address.",
+  "authPasswordLabel": "Password",
+  "authPasswordRequired": "Enter your password.",
+  "authPasswordLength": "Use at least 12 characters.",
+  "authTerms": "I agree to the terms and privacy policy.",
+  "authVerifyButton": "VERIFY EMAIL",
+  "authCreateButton": "CREATE ACCOUNT",
+  "authSignInButton": "SIGN IN",
+  "authDivider": "OR",
+  "authGoogleButton": "Continue with Google",
+  "authSwitchSignIn": "Already have an account? Sign in",
+  "authSwitchSignUp": "New to AETHERA? Create an account",
+  "adminHeader": "Admin dashboard",
+  "adminOverview": "Platform overview",
+  "adminTotalUsers": "Total users",
+  "adminActiveUsers": "Active users",
+  "adminFarmers": "Farmers",
+  "adminExperts": "Experts",
+  "adminPendingExperts": "Pending experts",
+  "adminApplications": "Expert applications",
+  "adminNoApplications": "No expert applications need review.",
+  "adminUsers": "User accounts",
+  "adminNoUsers": "No user accounts found.",
+  "adminApprove": "Approve",
+  "adminReject": "Reject",
+  "adminUserActive": "Active",
+  "adminUserInactive": "Inactive",
+  "adminLogout": "Sign out",
+  "adminLoadFailed": "Could not load the admin dashboard.",
+  "adminRetry": "Retry",
+  "adminRoleAdmin": "Administrator",
+  "adminStatusUpdated": "Account status updated.",
+  "diagnosisTitle": "Crop diagnosis",
+  "diagnosisRefresh": "Refresh cases",
+  "diagnosisLoadError": "Could not load your data. Check your connection and try again.",
+  "diagnosisPhotoError": "Could not open the photo.",
+  "diagnosisAddFarm": "Please add a farm first.",
+  "diagnosisSelectPhoto": "Please select a crop photo.",
+  "diagnosisDescribeSymptoms": "Please describe the symptoms in a little more detail.",
+  "diagnosisNew": "New crop diagnosis",
+  "diagnosisInstructions": "Send a photo and symptoms to an agricultural expert.",
+  "diagnosisSelectFarm": "Select your farm",
+  "diagnosisChoosePhoto": "Choose crop photo",
+  "diagnosisChangePhoto": "Change photo",
+  "diagnosisSymptoms": "Describe the symptoms",
+  "diagnosisSymptomExample": "Example: yellow spots on leaves, wilting...",
+  "diagnosisSubmitting": "Submitting...",
+  "diagnosisSubmit": "Submit for expert review",
+  "diagnosisFarmRequired": "Add a farm in the Farms tab before submitting a diagnosis.",
+  "diagnosisCaseSubmitted": "Case submitted! An expert can now review it.",
+  "diagnosisSubmissionFailed": "Submission failed: {error}",
+  "diagnosisServerError": "Server error ({status})",
+  "diagnosisPendingStatus": "Pending expert review",
+  "diagnosisValidatedStatus": "Validated by expert",
+  "diagnosisRejectedStatus": "Rejected / needs further review",
+  "diagnosisExpertDiagnosis": "Expert diagnosis",
+  "diagnosisExpertRecommendation": "Expert recommendation",
+  "diagnosisSubmittedAt": "Submitted: {time}",
+  "diagnosisMyCases": "My diagnosis cases",
+  "diagnosisCasesDescription": "Track your submissions and expert feedback.",
+  "diagnosisNoCases": "No diagnosis cases yet.",
+  "diagnosisRetry": "Retry",
+  "@diagnosisSubmissionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagnosisServerError": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagnosisSubmittedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "authInvalidCredentials": "Email or password is incorrect.",
+  "authGoogleConfiguration": "Google sign-in is not configured on the server. Add Firebase Admin credentials and restart the API.",
+  "authGoogleInvalid": "Google sign-in could not be verified. Check the Firebase project configuration.",
+  "authConnectionError": "Unable to connect. Please try again."
 }

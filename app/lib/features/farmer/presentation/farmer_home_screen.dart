@@ -602,7 +602,6 @@ class _FarmerHomeScreenState extends ConsumerState<FarmerHomeScreen> {
   Widget _deviceCard(Map<String, dynamic> device, String farmId, AppLocalizations l10n) {
     final id = (device['id'] ?? '').toString();
     final name = (device['name'] ?? l10n.irrigationDevice).toString();
-    final active = device['is_active'] == true;
     final connectionStatus = (device['connection_status'] ?? 'unknown').toString();
     final statusLabel = connectionStatus == 'online'
         ? l10n.dashboardOnline

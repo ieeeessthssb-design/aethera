@@ -32,12 +32,6 @@ app = FastAPI(
 UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "uploads"
 (UPLOAD_ROOT / "diagnoses").mkdir(parents=True, exist_ok=True)
 
-app.mount(
-    "/uploads",
-    StaticFiles(directory=str(UPLOAD_ROOT)),
-    name="uploads",
-)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -55,7 +49,6 @@ for router in (
     app.include_router(router)
 
 
-UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "uploads"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
 
